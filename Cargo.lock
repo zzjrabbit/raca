@@ -3,6 +3,26 @@
 version = 4
 
 [[package]]
+name = "ab_glyph"
+version = "0.2.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec3672c180e71eeaaac3a541fbbc5f5ad4def8b747c595ad30d674e43049f7b0"
+dependencies = [
+ "ab_glyph_rasterizer",
+ "libm",
+ "owned_ttf_parser",
+]
+
+[[package]]
+name = "ab_glyph_rasterizer"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c71b1793ee61086797f5c80b6efa2b8ffa6d5dd703f118545808a7f2e27f7046"
+dependencies = [
+ "libm",
+]
+
+[[package]]
 name = "acpi"
 version = "5.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -119,6 +139,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "core_maths"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3b02505ccb8c50b0aa21ace0fc08c3e53adebd4e58caa18a36152803c7709a3"
+dependencies = [
+ "libm",
+]
+
+[[package]]
 name = "crc"
 version = "3.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -205,9 +234,9 @@ dependencies = [
 
 [[package]]
 name = "goblin"
-version = "0.8.2"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b363a30c165f666402fe6a3024d3bec7ebc898f96a4a23bd1c99f8dbf3f4f47"
+checksum = "13d7f8e497a18cbaafbf758d49d10ee2e718a3b51c4071cda9b1993da3fd32c7"
 dependencies = [
  "log",
  "plain",
@@ -254,6 +283,12 @@ name = "libc"
 version = "0.2.159"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "561d97a539a36e26a9a5fad1ea11a3039a67714694aaa379433e580854bc3dc5"
+
+[[package]]
+name = "libm"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ec2a862134d2a7d32d7983ddcdd1c4923530833c9f2ea1a44fc5fa473989058"
 
 [[package]]
 name = "limine"
@@ -343,14 +378,26 @@ dependencies = [
 
 [[package]]
 name = "os-terminal"
-version = "0.3.7"
+version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e87350fd8f816a32c581dc676145eaf25320629a47af3759c93afca54c376503"
+checksum = "1c02b9cba07d75619d19287c15d713c2c965d8a90218ea959ef108cb0f979c84"
 dependencies = [
+ "ab_glyph",
  "bitflags 2.6.0",
  "noto-sans-mono-bitmap",
+ "pc-keyboard",
  "spin",
+ "unicode-width",
  "vte",
+]
+
+[[package]]
+name = "owned_ttf_parser"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22ec719bbf3b2a81c109a4e20b1f129b5566b7dce654bc3872f6a05abf82b2c4"
+dependencies = [
+ "ttf-parser",
 ]
 
 [[package]]
@@ -358,6 +405,12 @@ name = "paste"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
+
+[[package]]
+name = "pc-keyboard"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0ca629cbb3f0d5b699c338f0129ff78c9bfd7ea8b1258ad529bff490dc8ed5a"
 
 [[package]]
 name = "plain"
@@ -583,6 +636,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ttf-parser"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5902c5d130972a0000f60860bfbf46f7ca3db5391eddfedd1b8728bd9dc96c0e"
+dependencies = [
+ "core_maths",
+]
+
+[[package]]
 name = "uart_16550"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -598,6 +660,12 @@ name = "unicode-ident"
 version = "1.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e91b56cd4cadaeb79bbf1a5645f6b4f8dc5bde8834ad5894a8db35fda9efa1fe"
+
+[[package]]
+name = "unicode-width"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fc81956842c57dac11422a97c3b8195a1ff727f06e85c84ed2e8aa277c9a0fd"
 
 [[package]]
 name = "utf8parse"

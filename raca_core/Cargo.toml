@@ -9,7 +9,7 @@ forced-target = "x86_64-unknown-none"
 [dependencies]
 x86_64 = "0.15.1"
 bit_field = "0.10.2"
-os-terminal = "0.3.7"
+os-terminal = "0.4.6"
 spin = "0.9.8"
 talc = "4.4.1"
 uart_16550 = "0.3.1"
@@ -18,7 +18,7 @@ x2apic = "0.4.3"
 numeric-enum-macro = "0.2.0"
 
 [dependencies.goblin]
-version = "0.8.2"
+version = "0.9.1"
 default-features = false
 features = ["elf64","elf32","endian_fd"]
 

@@ -23,6 +23,7 @@ pub fn init() {
     arch::interrupts::IDT.load();
     arch::smp::CPUS.write().init_ap();
     arch::apic::init();
+    fs::init();
     syscall::init();
     task::init();
     log::info!("racaOS intialization completed!");
