@@ -56,7 +56,7 @@ extern "x86-interrupt" fn timer_interrupt(_frame: InterruptStackFrame) {
     }
 
     unsafe {
-        core::arch::asm!(
+        core::arch::naked_asm!(
             "cli",
             crate::push_context!(),
             "mov rdi, rsp",
@@ -66,7 +66,6 @@ extern "x86-interrupt" fn timer_interrupt(_frame: InterruptStackFrame) {
             "sti",
             "iretq",
             timer_handler = sym timer_handler,
-            options(noreturn)
         );
     }
 }

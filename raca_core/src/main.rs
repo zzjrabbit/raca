@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![feature(generic_const_exprs)]
 
 use core::{ffi::CStr, panic::PanicInfo, slice};
 use limine::{request::ModuleRequest, BaseRevision};
@@ -9,12 +10,21 @@ use raca_core::module::Module;
 #[link_section = ".requests"]
 pub static BASE_REVISION: BaseRevision = BaseRevision::with_revision(1);
 
-const fn hello_kernel_module_path() -> &'static [u8] {
-    &[b'/', b'h', b'e', b'l', b'l', b'o', b'.', b'k', b'm', 0]
+const fn create_string<const N: usize>(s: &[u8; N]) -> [u8; N + 1] {
+    let mut res = [0; N + 1];
+    let mut i = 0;
+    while i < N {
+        res[i] = s[i];
+        i += 1;
+    }
+    res[N] = 0;
+    res
 }
 
 static HELLO_MODULE: limine::modules::InternalModule = limine::modules::InternalModule::new()
-    .with_path(unsafe { CStr::from_bytes_with_nul_unchecked(hello_kernel_module_path()) });
+    .with_path(unsafe {
+        CStr::from_bytes_with_nul_unchecked(&create_string(b"/modules/hello.km"))
+    });
 
 #[used]
 #[link_section = ".requests"]
@@ -27,8 +37,8 @@ pub extern "C" fn main() -> ! {
     let (ptr, size) = (module.addr(), module.size());
     let data = unsafe { slice::from_raw_parts_mut(ptr, size as usize) };
     let module = Module::load(data);
-    log::info!("module {} loaded", module.get_name());
-    module.exec();
+    module.init();
+    drop(module);
 
     loop {
         x86_64::instructions::hlt();

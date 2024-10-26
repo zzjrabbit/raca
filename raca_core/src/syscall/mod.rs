@@ -1,4 +1,4 @@
-use core::arch::asm;
+use core::arch::{asm, naked_asm};
 
 use x86_64::{
     registers::{
@@ -20,7 +20,7 @@ use debug::*;
 #[naked]
 extern "C" fn asm_syscall_handler() {
     unsafe {
-        asm!(
+        naked_asm!(
             "push rcx",
             "push r11",
             "push rbp",
@@ -44,7 +44,6 @@ extern "C" fn asm_syscall_handler() {
             "pop rcx",
             "sysretq",
             syscall_matcher = sym syscall_handler,
-            options(noreturn)
         );
     }
 }

@@ -1,8 +1,9 @@
 use std::collections::BTreeMap;
 use std::fs::File;
-use std::io;
+use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::str::FromStr;
 
 use argh::FromArgs;
 
@@ -33,7 +34,7 @@ struct Args {
     serial: bool,
 }
 
-fn build_module(name: &str, images_path: PathBuf) {
+fn build_module(name: &str, images_path: PathBuf, module_name: Option<String>) {
     let mut cmd = Command::new("cargo");
     cmd.current_dir("modules");
     cmd.arg("build");
@@ -42,41 +43,29 @@ fn build_module(name: &str, images_path: PathBuf) {
     let mut child = cmd.spawn().unwrap();
     child.wait().unwrap();
 
-    let module_path = PathBuf::from("target/target/release/".to_string()+name);
+    let module_path = PathBuf::from("target/target/release/".to_string() + name);
     let mut module_src = File::open(module_path).unwrap();
-    let mut module_dest = File::create(images_path.join(name.to_string()+".km")).unwrap();
+    let name = if let Some(name) = module_name {
+        name
+    } else {
+        name.to_string()
+    };
+    let mut module_dest = File::create(images_path.join(name + ".km")).unwrap();
 
     io::copy(&mut module_src, &mut module_dest).unwrap();
 }
 
-fn main() {
-    let raca_core_path = PathBuf::from(env!("CARGO_BIN_FILE_RACA_CORE_raca_core"));
-    println!("RacaCore Path: {}", raca_core_path.display());
-    let mut raca_core_src = File::open(raca_core_path).unwrap();
-
-    let images_path = PathBuf::from("esp");
-
-    let mut raca_core_dest = File::create(images_path.join("core.so")).unwrap();
-
-    io::copy(&mut raca_core_src, &mut raca_core_dest).unwrap();
-
-    let modules = ["hello"];
-    for module in modules {
-        build_module(module, images_path.clone());
-    }
-
+fn build_image_from_dir(dir: &str, image_file: &str) {
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let img_path = manifest_dir.parent().unwrap().join("racaOS.img");
+    let img_path = manifest_dir.parent().unwrap().join(image_file);
 
     let mut files = BTreeMap::new();
 
-    for entry in walkdir::WalkDir::new("esp") {
+    for entry in walkdir::WalkDir::new(dir) {
         if let Ok(entry) = entry {
-            //println!("{:#?}",entry.path());
             if entry.file_type().is_file() {
                 let mut path = entry.path().to_str().unwrap().to_string();
-                for _ in 0..4 {
-                    // 删除前4个字符，即"esp/"
+                for _ in 0..(dir.len() + 1) {
                     path.remove(0);
                 }
                 let path = path.replace("\\", "/");
@@ -87,15 +76,54 @@ fn main() {
     }
 
     image_builder::ImageBuilder::build(files, &img_path).unwrap();
+}
+
+fn main() {
+    let mut config_file = File::open("config.toml").unwrap();
+    let mut config_data = String::new();
+    config_file.read_to_string(&mut config_data).unwrap();
+    let config = toml::Table::from_str(&config_data).unwrap();
+
+    let esp_config = config.get("esp").unwrap().as_table().unwrap();
+    let initrd_config = config.get("initrd").unwrap().as_table().unwrap();
+
+    let raca_core_path = PathBuf::from(env!("CARGO_BIN_FILE_RACA_CORE_raca_core"));
+    println!("RacaCore Path: {}", raca_core_path.display());
+    let mut raca_core_src = File::open(raca_core_path).unwrap();
+
+    let images_path = PathBuf::from("esp");
+
+    let mut raca_core_dest = File::create(images_path.join("core.so")).unwrap();
+
+    io::copy(&mut raca_core_src, &mut raca_core_dest).unwrap();
+
+    for module in esp_config.get("modules").unwrap().as_array().unwrap() {
+        build_module(
+            module.as_str().unwrap(),
+            images_path.clone().join("modules"),
+            None,
+        );
+    }
+
+    let initrd_path = PathBuf::from("initrd");
+
+    let initrd_fs = initrd_config.get("fs").unwrap().as_str().unwrap();
+
+    build_module(initrd_fs, images_path.clone(), Some("initrd_fs".into()));
+
+    for module in initrd_config.get("modules").unwrap().as_array().unwrap() {
+        build_module(module.as_str().unwrap(), initrd_path.clone(), None);
+    }
+
+    build_image_from_dir("initrd", "esp/initrd");
+
+    build_image_from_dir("esp", "racaOS.img");
 
     let args: Args = argh::from_env();
 
     if args.boot {
         let mut cmd = Command::new("qemu-system-x86_64");
-        let drive_config = format!(
-            "format=raw,file={},if=none,id=boot_disk",
-            &img_path.display()
-        );
+        let drive_config = format!("format=raw,file=racaOS.img,if=none,id=boot_disk",);
 
         cmd.arg("-device").arg("ahci,id=ahci");
         cmd.arg("-machine").arg("q35");

@@ -1,24 +1,15 @@
 #![no_std]
 #![no_main]
-#![allow(improper_ctypes)]
-use module_std::InfoStruct;
+use module_std::{get_module_handle, kernel_module, println};
 
-#[used]
-#[link_section = ".info"]
-#[no_mangle]
-static MODULE_INFO: InfoStruct =
-    InfoStruct::with_name("hello");
+kernel_module!(hello, GPL, init, exit);
 
-extern {
-    fn print(msg : &str);
+pub fn init() -> usize {
+    println!("hello handle: {}", get_module_handle());
+    0
 }
 
-#[no_mangle]
-pub extern "C" fn init() -> usize {
-    //let function = MODULE_INFO.get_func(0);
-    //function("test");
-    unsafe {
-        print("Hello from kernel module hello!");
-    }
+pub fn exit() -> usize {
+    println!("Kernel module hello exiting");
     0
 }

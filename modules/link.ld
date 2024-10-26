@@ -1,8 +1,8 @@
-ENTRY(init)
-
 SECTIONS {
     .text : {
         *(.text .text.*)
+
+        KEEP(*(.module))
     }
 
     .rodata : {

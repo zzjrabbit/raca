@@ -10,6 +10,7 @@ anyhow = "1.0.32"
 tempfile = "3.3.0"
 gpt = "4.0.0"
 walkdir = "2.5.0"
+toml = "0.8.19"
 
 [dependencies.fatfs]
 version = "0.3.4"
