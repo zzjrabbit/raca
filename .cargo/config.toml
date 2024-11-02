@@ -1,6 +1,8 @@
 [unstable]
 bindeps = true
 
+[env]
+CC_x86_64-unknown-none = "gcc"
 
 [target.'cfg(target_os = "none")']
 rustflags = ["-C", "relocation-model=static"]

@@ -1,11 +1,14 @@
 use std::collections::BTreeMap;
 use std::fs::File;
-use std::io::{self, Read};
+use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::str::FromStr;
 
 use argh::FromArgs;
+use cpio::newc::ModeFileType;
+use cpio::{write_cpio, NewcBuilder};
+use tempfile::tempfile;
 
 mod image_builder;
 
@@ -55,6 +58,39 @@ fn build_module(name: &str, images_path: PathBuf, module_name: Option<String>) {
     io::copy(&mut module_src, &mut module_dest).unwrap();
 }
 
+fn build_initramfs() {
+    let mut initramfs_file = File::create("esp/boot/initramfs").unwrap();
+    let mut inputs = Vec::new();
+
+    for entry in walkdir::WalkDir::new("initramfs") {
+        if let Ok(entry) = entry {
+            if entry.file_type().is_file() {
+                let mut path = entry.path().to_str().unwrap().to_string();
+                for _ in 0..("initramfs".len() + 1) {
+                    path.remove(0);
+                }
+                let path = path.replace("\\", "/");
+                println!("{} {}", path, entry.path().to_path_buf().display());
+
+                let path_out = entry.path().to_path_buf().clone();
+
+                inputs.push((path, path_out));
+            }
+        }
+    }
+
+    write_cpio(
+        inputs.iter().map(|(path_in, path)| {
+            (
+                NewcBuilder::new(path_in).set_mode_file_type(ModeFileType::Regular),
+                File::open(path).unwrap(),
+            )
+        }),
+        &mut initramfs_file,
+    )
+    .unwrap();
+}
+
 fn build_image_from_dir(dir: &str, image_file: &str) {
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
     let img_path = manifest_dir.parent().unwrap().join(image_file);
@@ -85,7 +121,7 @@ fn main() {
     let config = toml::Table::from_str(&config_data).unwrap();
 
     let esp_config = config.get("esp").unwrap().as_table().unwrap();
-    let initrd_config = config.get("initrd").unwrap().as_table().unwrap();
+    let initramfs_config = config.get("initramfs").unwrap().as_table().unwrap();
 
     let raca_core_path = PathBuf::from(env!("CARGO_BIN_FILE_RACA_CORE_raca_core"));
     println!("RacaCore Path: {}", raca_core_path.display());
@@ -105,17 +141,14 @@ fn main() {
         );
     }
 
-    let initrd_path = PathBuf::from("initrd");
+    let initrd_path = PathBuf::from("initramfs");
 
-    let initrd_fs = initrd_config.get("fs").unwrap().as_str().unwrap();
-
-    build_module(initrd_fs, images_path.clone(), Some("initrd_fs".into()));
-
-    for module in initrd_config.get("modules").unwrap().as_array().unwrap() {
+    for module in initramfs_config.get("modules").unwrap().as_array().unwrap() {
         build_module(module.as_str().unwrap(), initrd_path.clone(), None);
     }
 
-    build_image_from_dir("initrd", "esp/initrd");
+    //build_image_from_dir("initrd", "esp/initrd");
+    build_initramfs();
 
     build_image_from_dir("esp", "racaOS.img");
 

@@ -4,6 +4,7 @@
 #![feature(allocator_api)]
 #![feature(abi_x86_interrupt)]
 #![feature(naked_functions)]
+#![feature(generic_const_exprs)]
 
 extern crate alloc;
 

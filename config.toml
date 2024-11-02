@@ -1,6 +1,5 @@
 [esp]
 modules = ["hello"]
 
-[initrd]
-fs = "fat32"
+[initramfs]
 modules = []

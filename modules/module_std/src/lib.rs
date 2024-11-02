@@ -32,12 +32,6 @@ impl InfoStruct {
     }
 }
 
-static MODULE_HANDLE: Mutex<usize> = Mutex::new(0);
-
-pub(crate) fn get_module_handle() -> usize {
-    *MODULE_HANDLE.lock()
-}
-
 #[macro_export]
 macro_rules! kernel_module {
     ($name: ident,$init: ident,$exit: ident) => {

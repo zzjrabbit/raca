@@ -1,34 +1,13 @@
-use alloc::string::String;
+use crate::fs::InodeFunction;
 
-use crate::fs::Inode;
+pub struct NullDevice;
 
-pub struct NullDevice {
-    path: String,
-}
+impl InodeFunction for NullDevice {
+    fn read_at(&self, _offset: usize, _data: &mut [u8]) -> usize {
+        0
+    }
 
-impl NullDevice {
-    pub fn new() -> Self {
-        Self {
-            path: String::new(),
-        }
+    fn write_at(&mut self, _offset: usize, _data: &[u8]) -> usize {
+        0
     }
 }
-
-impl Inode for NullDevice {
-    fn when_mounted(&mut self, path: String, _father: Option<crate::fs::InodeRef>) {
-        self.path = path;
-    }
-
-    fn when_umounted(&mut self) {
-        self.path = String::new();
-    }
-
-    fn get_path(&self) -> String {
-        self.path.clone()
-    }
-
-    fn inode_type(&self) -> crate::fs::InodeTy {
-        crate::fs::InodeTy::CharDevice
-    }
-}
-
