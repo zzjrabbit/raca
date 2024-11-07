@@ -5,10 +5,13 @@ pub mod vfs;
 
 use core::{ffi::CStr, slice::from_raw_parts};
 
+use alloc::{boxed::Box, vec};
 use limine::request::ModuleRequest;
 use ramfs::create_ramfs_from_cpio;
 use spin::Lazy;
 pub use vfs::*;
+
+use crate::device::terminal::TERMINAL;
 
 const fn create_string<const N: usize>(s: &[u8; N]) -> [u8; N + 1] {
     let mut res = [0; N + 1];
@@ -46,19 +49,14 @@ pub static ROOT: Lazy<FileRef> = Lazy::new(|| {
 
 pub fn init() {
 
-    log::info!("root children: {:#?}",ROOT.read().get_children());
+    let font_file = ROOT.read().get_child("FiraCodeNotoSans.ttf").unwrap();
 
-    log::info!(
-        "root path: {} haha children: {:#?}",
-        ROOT.read().get_file_path(),
-        ROOT.read().get_child("haha").unwrap().read().get_children(),
-    );
+    let mut data = vec![0; font_file.read().len()];
 
-    let mut data = [0; 50];
-    ROOT.read()
-        .get_child("haha")
-        .unwrap()
-        .read().get_child("test.txt").unwrap().read().read_at(0, &mut data);
+    font_file.read().read_at(0, &mut data);
 
-    log::info!("test.txt : {}", core::str::from_utf8(&data).unwrap())
+    TERMINAL.lock().set_font_manager(Box::new(os_terminal::font::TrueTypeFont::new(11.0, data.leak())));
+
+    log::info!("很");
+
 }

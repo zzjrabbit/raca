@@ -12,6 +12,8 @@ pub enum InodeType {
 pub trait InodeFunction {
     fn read_at(&self, offset: usize, data: &mut [u8]) -> usize;
     fn write_at(&mut self, offset: usize, data: &[u8]) -> usize;
+
+    fn len(&self) -> usize;
 }
 
 #[derive(Clone)]
@@ -46,6 +48,14 @@ impl Inode {
     pub fn write_at(&self, offset: usize, data: &[u8]) -> usize {
         if self.inode_type == InodeType::File {
             self.func.write().write_at(offset, data)
+        } else {
+            0
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        if self.inode_type == InodeType::File {
+            self.func.read().len()
         } else {
             0
         }

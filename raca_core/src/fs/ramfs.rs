@@ -92,4 +92,8 @@ impl<const BLOCK_SIZE: usize> InodeFunction for RamfsInode<BLOCK_SIZE> {
     fn write_at(&mut self, _offset: usize, _data: &[u8]) -> usize {
         0
     }
+
+    fn len(&self) -> usize {
+        self.data.len() * BLOCK_SIZE
+    }
 }

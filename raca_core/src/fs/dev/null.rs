@@ -10,4 +10,8 @@ impl InodeFunction for NullDevice {
     fn write_at(&mut self, _offset: usize, _data: &[u8]) -> usize {
         0
     }
+
+    fn len(&self) -> usize {
+        0
+    }
 }
