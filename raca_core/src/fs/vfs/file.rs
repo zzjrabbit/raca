@@ -3,7 +3,7 @@ use core::{fmt::Debug, ops::{Deref, DerefMut}};
 use alloc::{
     collections::btree_map::BTreeMap,
     string::{String, ToString},
-    sync::Arc, vec::Vec,
+    sync::Arc,
 };
 use spin::RwLock;
 
@@ -27,31 +27,32 @@ impl FileRef {
     }
 
     pub fn create_dir(&self, relative_path: Path) -> FileRef {
+
         let relative_path = {
-            let mut tmp = relative_path.clone();
-            if tmp.ends_with("/") {
-                tmp.pop();
-            }
-            tmp
+            let mut temp = relative_path.clone();
+            temp.delete_end_spliters();
+            temp
         };
+
+        log::info!("creating dir: {}", relative_path);
 
         if relative_path.is_empty() {
             return self.clone();
         }
 
-        let parents = relative_path.split("/").collect::<Vec<_>>();
+        let parents = relative_path.parts();
 
         let mut current = self.clone();
 
         let mut current_relative_path = Path::new("/");
 
         for parent in parents {
-            let child = current.clone().read().get_child(parent).clone();
+            let child = current.clone().read().get_child(parent.as_str()).clone();
             if let Some(child) = child {
                 current = child;
             } else {
                 
-                current_relative_path += parent;
+                current_relative_path = current_relative_path.join(parent.clone());
 
                 let child_dir = FileRef::new(
                     Inode::new(NullDevice, InodeType::Dir),
@@ -64,7 +65,6 @@ impl FileRef {
                     .children
                     .insert(parent.to_string(), child_dir.clone());
                 current = child_dir;
-                current_relative_path += "/";
             }
         }
 

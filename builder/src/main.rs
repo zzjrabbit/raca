@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use std::fs::File;
-use std::io::{self, Read, Write};
+use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::str::FromStr;
@@ -8,7 +8,6 @@ use std::str::FromStr;
 use argh::FromArgs;
 use cpio::newc::ModeFileType;
 use cpio::{write_cpio, NewcBuilder};
-use tempfile::tempfile;
 
 mod image_builder;
 
@@ -69,7 +68,10 @@ fn build_initramfs() {
                 for _ in 0..("initramfs".len() + 1) {
                     path.remove(0);
                 }
+
+                #[cfg(target_os = "windows")]
                 let path = path.replace("\\", "/");
+
                 println!("{} {}", path, entry.path().to_path_buf().display());
 
                 let path_out = entry.path().to_path_buf().clone();

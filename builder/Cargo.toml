@@ -13,8 +13,6 @@ walkdir = "2.5.0"
 toml = "0.8.19"
 cpio = "0.4"
 
-zstd-safe = "7.2.1"
-
 [dependencies.fatfs]
 version = "0.3.4"
 default-features = false

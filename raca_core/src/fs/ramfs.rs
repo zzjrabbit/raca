@@ -1,4 +1,4 @@
-use alloc::{string::ToString, vec::Vec};
+use alloc::{string::ToString, vec::Vec, vec};
 
 use super::*;
 
@@ -6,31 +6,33 @@ pub fn create_ramfs_from_cpio<const BLOCK_SIZE: usize>(
     mut father_path: Path,
     cpio: &[u8],
 ) -> FileRef {
-    if father_path.ends_with("/") {
-        father_path.pop();
-    }
+    father_path.delete_end_spliters();
 
     let root_inode = Inode::new(RamfsInode::<BLOCK_SIZE>::new_dir(), InodeType::Dir);
     let root = FileRef::new(
         root_inode,
         FileType::Dir,
         "".into(),
-        father_path.clone() + "/",
+        father_path.dir_format(),
     );
 
     let files = cpio_reader::iter_files(cpio).collect::<Vec<_>>();
 
     for file in files {
-        let path = Path::new(file.name().to_string());
+        let path = father_path.join(Path::new(file.name().to_string()));
+        let name = path.name();
         let parent_dir = path.parent();
 
-        let dir = root.create_dir(parent_dir.unwrap().clone());
+        let dir = match parent_dir {
+            Some(parent) => root.create_dir(parent.clone()),
+            None => root.clone(),
+        };
 
         let inode = Inode::new(
             RamfsInode::<BLOCK_SIZE>::new_file(file.file()),
             InodeType::File,
         );
-        let file = FileRef::new(inode, FileType::File, file.name().to_string(), path);
+        let file = FileRef::new(inode, FileType::File, name, path);
         dir.write().add_child(file);
     }
 
@@ -55,21 +57,13 @@ impl<const BLOCK_SIZE: usize> RamfsInode<BLOCK_SIZE> {
         let mut blocks = Vec::with_capacity(block_number);
 
         for i in 0..block_number - 1 {
-            let block = unsafe {
-                let mut temp = Vec::<u8>::with_capacity(BLOCK_SIZE);
-                temp.set_len(BLOCK_SIZE);
-                temp.leak()
-            };
+            let block = vec![0;BLOCK_SIZE].leak();
 
             block.copy_from_slice(&data[i * BLOCK_SIZE..(i + 1) * BLOCK_SIZE]);
             blocks.push(block);
         }
 
-        let block = unsafe {
-            let mut temp = Vec::<u8>::with_capacity(BLOCK_SIZE);
-            temp.set_len(BLOCK_SIZE);
-            temp.leak()
-        };
+        let block = vec![0;BLOCK_SIZE].leak();
 
         for i in (block_number-1)*BLOCK_SIZE .. data.len() {
             block[i - (block_number - 1) * BLOCK_SIZE] = data[i];

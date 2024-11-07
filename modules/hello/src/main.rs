@@ -1,14 +1,20 @@
 #![no_std]
 #![no_main]
-use module_std::{kernel_module, println};
+use module_std::{kernel_module, println, KernelModule};
 
-kernel_module!(hello, GPL, init, exit);
+kernel_module!(Hello,hello, GPL);
 
-pub fn init() -> usize {
-    0
+pub struct Hello;
+
+impl KernelModule for Hello {
+    fn init() -> Option<Self> {
+        println!("hello init");
+        Some(Self)
+    }
 }
 
-pub fn exit() -> usize {
-    println!("Kernel module hello exiting");
-    0
+impl Drop for Hello {
+    fn drop(&mut self) {
+        println!("hello drop");
+    }
 }

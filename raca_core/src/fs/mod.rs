@@ -45,18 +45,20 @@ pub static ROOT: Lazy<FileRef> = Lazy::new(|| {
 });
 
 pub fn init() {
+
+    log::info!("root children: {:#?}",ROOT.read().get_children());
+
     log::info!(
-        "root path: {} root children: {:#?}",
+        "root path: {} haha children: {:#?}",
         ROOT.read().get_file_path(),
-        ROOT.read().get_children()
+        ROOT.read().get_child("haha").unwrap().read().get_children(),
     );
 
     let mut data = [0; 50];
     ROOT.read()
-        .get_child("test.txt")
+        .get_child("haha")
         .unwrap()
-        .read()
-        .read_at(0, &mut data);
+        .read().get_child("test.txt").unwrap().read().read_at(0, &mut data);
 
     log::info!("test.txt : {}", core::str::from_utf8(&data).unwrap())
 }

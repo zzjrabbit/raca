@@ -21,22 +21,34 @@ impl Path {
     }
 
     pub fn parent(&self) -> Option<Path> {
-        if self.inner.is_empty() {
+        let mut path = self.clone();
+
+        path.delete_end_spliters();
+
+        if path.is_empty() {
             return None;
-        }
-
-        let mut path = self.inner.clone();
-
-        if path.ends_with("/") {
-            path.pop();
         }
 
         while !path.ends_with("/") && !path.is_empty() {
             path.pop();
         }
-        Some(Path::new(path))
+        Some(path)
     }
 
+    pub fn name(&self) -> String {
+        let mut path = self.clone();
+        path.delete_end_spliters();
+
+        let mut name = String::new();
+
+        while !path.ends_with("/") && !path.is_empty() {
+            name.insert(0,path.pop().unwrap());
+        }
+
+        name
+    }
+
+    /// Gets the ancestors of the given path
     pub fn ancestors(&self) -> Vec<Path> {
         let mut ancestors = Vec::new();
         let mut current_path = self.clone();
@@ -48,6 +60,43 @@ impl Path {
 
         ancestors.reverse();
         ancestors
+    }
+
+    /// Gets the parts of the given path
+    pub fn parts(&self) -> Vec<Path> {
+        self.inner.split("/").filter(|s| !s.is_empty()).map(|s| Path::new(s)).collect::<Vec<_>>()
+    }
+
+    /// Deltes all the "/" from the end of the path.
+    pub fn delete_end_spliters(&mut self) {
+        while self.inner.ends_with("/") {
+            self.inner.pop();
+        }
+    }
+
+    pub fn join(&self, mut second: Path) -> Path {
+        let mut first = self.clone();
+
+        first.delete_end_spliters();
+        
+        while second.starts_with("/") {
+            second.remove(0);
+        }
+
+        Path::new(format!("{}/{}", first, second))
+    }
+
+    pub fn dir_format(&self) -> Path {
+        let mut path = self.clone();
+        path.delete_end_spliters();
+        path.push('/');
+        path
+    }
+}
+
+impl From<Path> for String {
+    fn from(value: Path) -> Self {
+        value.inner
     }
 }
 

@@ -1,5 +1,6 @@
 #![no_std]
 #![allow(improper_ctypes)]
+#![allow(incomplete_features)]
 #![feature(alloc_error_handler)]
 #![feature(allocator_api)]
 #![feature(abi_x86_interrupt)]
