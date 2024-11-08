@@ -6,6 +6,7 @@ pub extern "C" fn syscall(_id: u64, _arg1: usize, _arg2: usize, _arg3: usize, _a
     #[rustfmt::skip]
     unsafe {
         core::arch::naked_asm!(
+            "mov r10,rcx",
             "syscall",
             "ret",
         )
@@ -17,6 +18,7 @@ pub extern "C" fn syscall_noret(_id: u64, _arg1: usize, _arg2: usize, _arg3: usi
     #[rustfmt::skip]
     unsafe {
         core::arch::naked_asm!(
+            "mov r10,rcx",
             "syscall",
         )
     }

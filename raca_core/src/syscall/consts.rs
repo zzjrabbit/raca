@@ -5,6 +5,7 @@ use core::mem::{transmute, variant_count};
 #[repr(u8)]
 pub enum SyscallIndex {
     Debug,
+    Open,
 }
 
 impl From<usize> for SyscallIndex {

@@ -1,4 +1,5 @@
 use spin::Lazy;
+use x86_64::instructions::port::PortReadOnly;
 //use x86_64::instructions::port::PortReadOnly;
 use x86_64::registers::control::Cr2;
 use x86_64::structures::idt::InterruptDescriptorTable;
@@ -8,6 +9,7 @@ use x86_64::VirtAddr;
 
 use super::gdt::DOUBLE_FAULT_IST_INDEX;
 use crate::arch::apic::LAPIC;
+use crate::device::terminal::TERMINAL;
 use crate::task::SCHEDULER;
 
 const INTERRUPT_INDEX_OFFSET: u8 = 32;
@@ -108,8 +110,11 @@ extern "x86-interrupt" fn double_fault(frame: InterruptStackFrame, error_code: u
 }
 
 extern "x86-interrupt" fn keyboard_interrupt(_frame: InterruptStackFrame) {
-    //let scancode: u8 = unsafe { PortReadOnly::new(0x60).read() };
-    //crate::device::keyboard::add_scancode(scancode);
+    let scancode: u8 = unsafe { PortReadOnly::new(0x60).read() };
+    let string_option = TERMINAL.lock().handle_keyboard(scancode).clone();
+    if let Some(string) = string_option {
+        crate::print!("{}",string);
+    }
     super::apic::end_of_interrupt();
 }
 

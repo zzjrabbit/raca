@@ -34,8 +34,6 @@ impl FileRef {
             temp
         };
 
-        log::info!("creating dir: {}", relative_path);
-
         if relative_path.is_empty() {
             return self.clone();
         }

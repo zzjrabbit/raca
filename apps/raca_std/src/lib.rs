@@ -5,9 +5,10 @@
 use core::panic::PanicInfo;
 
 pub mod debug;
+pub mod fs;
 mod syscall;
 
-extern {
+extern "C" {
     fn main();
 }
 

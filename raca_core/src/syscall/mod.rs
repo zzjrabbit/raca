@@ -13,9 +13,11 @@ use crate::{arch::gdt::Selectors, error::RcError};
 
 mod consts;
 mod debug;
+mod fs;
 
 use consts::SyscallIndex;
 use debug::*;
+use fs::*;
 
 #[naked]
 extern "C" fn asm_syscall_handler() {
@@ -29,6 +31,8 @@ extern "C" fn asm_syscall_handler() {
             "push r13",
             "push r14",
             "push r15",
+
+            "mov rcx, r10",
 
             "call {syscall_matcher}",
 
@@ -97,10 +101,11 @@ pub extern "C" fn syscall_handler(
 
     let ret = match sys_type {
         SyscallIndex::Debug => debug(arg1, arg2),
+        SyscallIndex::Open => open(arg1, arg2, arg3),
     };
 
     match ret {
-        Ok(_) => 0,
+        Ok(num) => num as isize,
         Err(err) => err as isize,
     }
 }

@@ -2,7 +2,7 @@ use core::sync::atomic::{AtomicU64, Ordering};
 
 use alloc::{
     boxed::Box,
-    collections::vec_deque::VecDeque,
+    collections::{btree_map::BTreeMap, vec_deque::VecDeque},
     string::String,
     sync::{Arc, Weak},
     vec::Vec,
@@ -11,9 +11,9 @@ use object::{File, Object, ObjectSegment};
 use spin::{Lazy, RwLock};
 use x86_64::{instructions::interrupts, structures::paging::OffsetPageTable, VirtAddr};
 
-use crate::memory::{
+use crate::{fs::operation::FileDescriptorManager, memory::{
     ExtendedPageTable, MappingType, MemoryManager, FRAME_ALLOCATOR, KERNEL_PAGE_TABLE,
-};
+}};
 
 use super::thread::{SharedThread, Thread};
 
@@ -41,6 +41,7 @@ pub struct Process {
     pub name: String,
     pub page_table: OffsetPageTable<'static>,
     pub threads: Vec<SharedThread>,
+    pub file_descriptor_manager: FileDescriptorManager,
 }
 
 impl Process {
@@ -50,6 +51,7 @@ impl Process {
             name: String::from(name),
             page_table: unsafe { KERNEL_PAGE_TABLE.lock().deep_copy() },
             threads: Default::default(),
+            file_descriptor_manager: FileDescriptorManager::new(BTreeMap::new()),
         };
 
         process

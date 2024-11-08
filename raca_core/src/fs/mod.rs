@@ -2,6 +2,7 @@ pub mod cache;
 pub mod dev;
 pub mod ramfs;
 pub mod vfs;
+pub mod operation;
 
 use core::{ffi::CStr, slice::from_raw_parts};
 
