@@ -6,6 +6,7 @@
 #![feature(abi_x86_interrupt)]
 #![feature(naked_functions)]
 #![feature(generic_const_exprs)]
+#![feature(variant_count)]
 
 extern crate alloc;
 
@@ -25,8 +26,10 @@ pub fn init() {
     arch::interrupts::IDT.load();
     arch::smp::CPUS.write().init_ap();
     arch::apic::init();
-    fs::init();
     syscall::init();
     task::init();
+    fs::init();
+
+
     log::info!("racaOS intialization completed!");
 }

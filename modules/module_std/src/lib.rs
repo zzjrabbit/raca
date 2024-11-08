@@ -1,7 +1,5 @@
 #![no_std]
 
-use spin::Mutex;
-
 extern crate alloc;
 
 #[doc(hidden)]
@@ -32,7 +30,7 @@ impl ModuleInfo {
     }
 }
 
-pub trait KernelModule: Sized + Sync + Drop {
+pub trait KernelModule: Sized + Sync {
     fn init() -> Option<Self>;
 }
 

@@ -1,4 +1,4 @@
-use core::arch::{asm, naked_asm};
+use core::arch::naked_asm;
 
 use x86_64::{
     registers::{
@@ -14,7 +14,7 @@ use crate::{arch::gdt::Selectors, error::RcError};
 mod consts;
 mod debug;
 
-use consts::SyscallType as Sys;
+use consts::SyscallIndex;
 use debug::*;
 
 #[naked]
@@ -30,8 +30,6 @@ extern "C" fn asm_syscall_handler() {
             "push r14",
             "push r15",
 
-            // Move the 4th argument in r10 to rcx to fit the C ABI
-            "mov rcx, r10",
             "call {syscall_matcher}",
 
             "pop r15",
@@ -72,34 +70,33 @@ pub fn init() {
 
 #[allow(unused_variables)]
 pub extern "C" fn syscall_handler(
+    syscall_number_raw: usize,
     arg1: usize,
     arg2: usize,
     arg3: usize,
     arg4: usize,
     arg5: usize,
-    arg6: usize,
 ) -> isize {
-    let syscall_number_raw: usize;
-    unsafe { asm!("mov {0}, rax", out(reg) syscall_number_raw) };
 
-    let sys_type = match Sys::try_from(syscall_number_raw as u32) {
-        Ok(sys_type) => sys_type,
-        Err(_) => return RcError::INVALID_ARGS as _,
+    //log::info!("number : {}", syscall_number_raw);
+
+    let sys_type = match SyscallIndex::try_from(syscall_number_raw) {
+        Ok(index) => index,
+        Err(_) => return RcError::INVALID_ARGS as isize,
     };
 
     log::info!(
-        "syscall {:?} {} {} {} {} {} {}",
+        "syscall {:?} {} {} {} {} {}",
         sys_type,
         arg1,
         arg2,
         arg3,
         arg4,
         arg5,
-        arg6
     );
 
     let ret = match sys_type {
-        Sys::DEBUG => debug(arg1, arg2),
+        SyscallIndex::Debug => debug(arg1, arg2),
     };
 
     match ret {

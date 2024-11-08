@@ -57,6 +57,29 @@ fn build_module(name: &str, images_path: PathBuf, module_name: Option<String>) {
     io::copy(&mut module_src, &mut module_dest).unwrap();
 }
 
+fn build_user_program(name: &str, images_path: PathBuf, user_program_name: Option<String>) {
+    let mut cmd = Command::new("cargo");
+    cmd.current_dir("apps");
+    cmd.arg("build");
+    cmd.arg("--package").arg(name);
+    cmd.arg("--release");
+    cmd.arg("--target").arg("x86_64-unknown-none");
+    
+    let mut child = cmd.spawn().unwrap();
+    child.wait().unwrap();
+
+    let module_path = PathBuf::from("target/x86_64-unknown-none/release/".to_string() + name);
+    let mut module_src = File::open(module_path).unwrap();
+    let name = if let Some(name) = user_program_name {
+        name
+    } else {
+        name.to_string()
+    };
+    let mut module_dest = File::create(images_path.join("bin").join(name + ".rae")).unwrap();
+
+    io::copy(&mut module_src, &mut module_dest).unwrap();
+}
+
 fn build_initramfs() {
     let mut initramfs_file = File::create("esp/boot/initramfs").unwrap();
     let mut inputs = Vec::new();
@@ -143,11 +166,19 @@ fn main() {
         );
     }
 
-    let initrd_path = PathBuf::from("initramfs");
+    let initramfs_path = PathBuf::from("initramfs");
 
     for module in initramfs_config.get("modules").unwrap().as_array().unwrap() {
-        build_module(module.as_str().unwrap(), initrd_path.clone(), None);
+        build_module(module.as_str().unwrap(), initramfs_path.clone(), None);
     }
+
+    for user_program in initramfs_config.get("users").unwrap().as_array().unwrap() {
+        let name = user_program.as_str().unwrap();
+        build_user_program(name, initramfs_path.clone(), None);
+    }
+
+    let init_name = initramfs_config.get("init").unwrap().as_str().unwrap();
+    build_user_program(init_name, initramfs_path, Some("init".into()));
 
     //build_image_from_dir("initrd", "esp/initrd");
     build_initramfs();

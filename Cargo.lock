@@ -286,6 +286,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "hello1"
+version = "0.1.0"
+dependencies = [
+ "raca_std",
+]
+
+[[package]]
 name = "indexmap"
 version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -293,6 +300,13 @@ checksum = "707907fe3c25f5424cce2cb7e1cbcafee6bdbe735ca90ef77c29e84591e5b9da"
 dependencies = [
  "equivalent",
  "hashbrown",
+]
+
+[[package]]
+name = "init"
+version = "0.1.0"
+dependencies = [
+ "raca_std",
 ]
 
 [[package]]
@@ -452,7 +466,7 @@ dependencies = [
 
 [[package]]
 name = "raca_core"
-version = "0.1.0"
+version = "16.0.0"
 dependencies = [
  "acpi",
  "bit_field",
@@ -468,6 +482,13 @@ dependencies = [
  "uart_16550",
  "x2apic",
  "x86_64 0.15.1",
+]
+
+[[package]]
+name = "raca_std"
+version = "0.1.0"
+dependencies = [
+ "syscall_macro",
 ]
 
 [[package]]
@@ -579,13 +600,22 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.86"
+version = "2.0.87"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e89275301d38033efb81a6e60e3497e734dfcc62571f2854bf4b16690398824c"
+checksum = "25aa4ce346d03a6dcd68dd8b4010bcb74e54e62c90c573f394c46eae99aba32d"
 dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "syscall_macro"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

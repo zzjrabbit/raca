@@ -3,3 +3,5 @@ modules = ["hello"]
 
 [initramfs]
 modules = []
+users = ["hello1"]
+init = "init"

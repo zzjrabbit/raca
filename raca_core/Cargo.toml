@@ -2,7 +2,7 @@ cargo-features = ["per-package-target"]
 
 [package]
 name = "raca_core"
-version = "0.1.0"
+version = "16.0.0"
 edition = "2021"
 forced-target = "x86_64-unknown-none"
 

@@ -57,6 +57,4 @@ pub fn init() {
 
     TERMINAL.lock().set_font_manager(Box::new(os_terminal::font::TrueTypeFont::new(11.0, data.leak())));
 
-    log::info!("很");
-
 }
