@@ -2,7 +2,7 @@
 #![no_main]
 use module_std::{kernel_module, println, KernelModule};
 
-kernel_module!(Hello,hello, GPL);
+kernel_module!(Hello, hello, Apache);
 
 pub struct Hello;
 

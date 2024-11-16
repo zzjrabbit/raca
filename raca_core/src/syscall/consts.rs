@@ -4,8 +4,16 @@ use core::mem::{transmute, variant_count};
 #[allow(dead_code)]
 #[repr(u8)]
 pub enum SyscallIndex {
-    Debug,
-    Open,
+    Debug = 0,
+    Open = 1,
+    Malloc = 2,
+    Read = 3,
+    Write = 4,
+    Lseek = 5,
+    Close = 6,
+    Fsize = 7,
+    CreateProcess = 8,
+    InsertModule = 9,
 }
 
 impl From<usize> for SyscallIndex {

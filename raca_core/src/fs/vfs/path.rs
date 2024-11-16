@@ -42,7 +42,7 @@ impl Path {
         let mut name = String::new();
 
         while !path.ends_with("/") && !path.is_empty() {
-            name.insert(0,path.pop().unwrap());
+            name.insert(0, path.pop().unwrap());
         }
 
         name
@@ -64,7 +64,11 @@ impl Path {
 
     /// Gets the parts of the given path
     pub fn parts(&self) -> Vec<Path> {
-        self.inner.split("/").filter(|s| !s.is_empty()).map(|s| Path::new(s)).collect::<Vec<_>>()
+        self.inner
+            .split("/")
+            .filter(|s| !s.is_empty())
+            .map(|s| Path::new(s))
+            .collect::<Vec<_>>()
     }
 
     /// Deltes all the "/" from the end of the path.
@@ -78,7 +82,7 @@ impl Path {
         let mut first = self.clone();
 
         first.delete_end_spliters();
-        
+
         while second.starts_with("/") {
             second.remove(0);
         }
@@ -111,7 +115,9 @@ where
 }
 
 impl<A> AddAssign<A> for Path
-where String: From<A> {
+where
+    String: From<A>,
+{
     fn add_assign(&mut self, rhs: A) {
         self.inner = format!("{}{}", self.inner, String::from(rhs));
     }

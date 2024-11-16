@@ -11,9 +11,10 @@ use object::{File, Object, ObjectSegment};
 use spin::{Lazy, RwLock};
 use x86_64::{instructions::interrupts, structures::paging::OffsetPageTable, VirtAddr};
 
-use crate::{fs::operation::FileDescriptorManager, memory::{
-    ExtendedPageTable, MappingType, MemoryManager, FRAME_ALLOCATOR, KERNEL_PAGE_TABLE,
-}};
+use crate::{
+    fs::{operation::{FileDescriptorManager, OpenMode}, FileRef},
+    memory::{ExtendedPageTable, MappingType, MemoryManager, FRAME_ALLOCATOR, KERNEL_PAGE_TABLE},
+};
 
 use super::thread::{SharedThread, Thread};
 
@@ -63,14 +64,17 @@ impl Process {
         process
     }
 
-    pub fn new_user_process(name: &str, elf_data: &'static [u8]) {
+    pub fn new_user_process(name: &str, elf_data: &'static [u8], stdin: FileRef, stdout: FileRef) -> SharedProcess {
         let binary = ProcessBinary::parse(elf_data);
         interrupts::without_interrupts(|| {
             let process = Arc::new(RwLock::new(Box::new(Self::new(name))));
+            process.write().file_descriptor_manager.add_file(stdin,OpenMode::Read);
+            process.write().file_descriptor_manager.add_file(stdout, OpenMode::Write);
             ProcessBinary::map_segments(&binary, &mut process.write().page_table, None);
             Thread::new_user_thread(Arc::downgrade(&process), binary.entry() as usize);
             PROCESSES.write().push_back(process.clone());
-        });
+            process
+        })
     }
 
     pub fn exit_process(&self) {

@@ -18,5 +18,4 @@ fn main() {
         "cargo:rerun-if-changed={}/src/syscall/syscall_numbers",
         manifest_dir.display()
     );
-
 }

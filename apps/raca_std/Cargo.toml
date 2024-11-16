@@ -5,3 +5,5 @@ edition = "2021"
 
 [dependencies]
 syscall_macro = { path = "../syscall_macro" }
+spin = "0.9.8"
+talc = "4.4.2"

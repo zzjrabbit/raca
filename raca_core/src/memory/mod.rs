@@ -12,7 +12,7 @@ mod page_table;
 
 pub use dma::DmaMemoryManager;
 pub use frame::BitmapFrameAllocator;
-pub use kernel_heap::init_heap;
+pub use kernel_heap::{init_heap,HEAP_END};
 pub use manager::{MappingType, MemoryManager};
 pub use page_table::*;
 

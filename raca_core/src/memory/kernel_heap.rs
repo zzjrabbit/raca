@@ -8,6 +8,7 @@ use crate::memory::MemoryManager;
 
 pub const HEAP_START: usize = 0x114514000000;
 pub const HEAP_SIZE: usize = 128 * 1024 * 1024;
+pub const HEAP_END: usize = HEAP_START + HEAP_SIZE;
 
 #[global_allocator]
 static ALLOCATOR: Talck<spin::Mutex<()>, ClaimOnOom> =

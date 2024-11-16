@@ -29,31 +29,26 @@ impl Parse for ParsedSyscallInput {
             }
         }
 
-        Ok (
-            Self {
-                entries,
-            }
-        )
+        Ok(Self { entries })
     }
 }
 
 fn parse_syscall(input: ParsedSyscallInput) -> proc_macro2::TokenStream {
-
     let entries = input.entries;
 
-    assert!(entries.len() < 6);
+    assert!(entries.len() <= 6);
 
     let mut output = proc_macro2::TokenStream::new();
 
     for entry in entries.iter() {
         output.extend(quote! {
-            #entry , 
+            #entry ,
         });
     }
 
     for _ in entries.len()..6 {
         output.extend(quote! {
-            0 , 
+            0 ,
         });
     }
 
@@ -66,7 +61,8 @@ pub fn syscall(input: TokenStream) -> TokenStream {
 
     quote! {
         crate::syscall::syscall(#output)
-    }.into()
+    }
+    .into()
 }
 
 #[proc_macro]
@@ -75,5 +71,6 @@ pub fn syscall_noret(input: TokenStream) -> TokenStream {
 
     quote! {
         crate::syscall::syscall_noret(#output)
-    }.into()
+    }
+    .into()
 }

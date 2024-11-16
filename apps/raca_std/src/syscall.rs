@@ -1,8 +1,14 @@
 #![allow(dead_code)]
 
-
 #[naked]
-pub extern "C" fn syscall(_id: u64, _arg1: usize, _arg2: usize, _arg3: usize, _arg4: usize, _arg5: usize) -> usize {
+pub extern "C" fn syscall(
+    _id: u64,
+    _arg1: usize,
+    _arg2: usize,
+    _arg3: usize,
+    _arg4: usize,
+    _arg5: usize,
+) -> isize {
     #[rustfmt::skip]
     unsafe {
         core::arch::naked_asm!(
@@ -14,7 +20,14 @@ pub extern "C" fn syscall(_id: u64, _arg1: usize, _arg2: usize, _arg3: usize, _a
 }
 
 #[naked]
-pub extern "C" fn syscall_noret(_id: u64, _arg1: usize, _arg2: usize, _arg3: usize, _arg4: usize, _arg5: usize) -> ! {
+pub extern "C" fn syscall_noret(
+    _id: u64,
+    _arg1: usize,
+    _arg2: usize,
+    _arg3: usize,
+    _arg4: usize,
+    _arg5: usize,
+) -> ! {
     #[rustfmt::skip]
     unsafe {
         core::arch::naked_asm!(

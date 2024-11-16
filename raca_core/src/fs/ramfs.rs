@@ -1,4 +1,4 @@
-use alloc::{string::ToString, vec::Vec, vec};
+use alloc::{string::ToString, vec, vec::Vec};
 
 use super::*;
 
@@ -57,15 +57,15 @@ impl<const BLOCK_SIZE: usize> RamfsInode<BLOCK_SIZE> {
         let mut blocks = Vec::with_capacity(block_number);
 
         for i in 0..block_number - 1 {
-            let block = vec![0;BLOCK_SIZE].leak();
+            let block = vec![0; BLOCK_SIZE].leak();
 
             block.copy_from_slice(&data[i * BLOCK_SIZE..(i + 1) * BLOCK_SIZE]);
             blocks.push(block);
         }
 
-        let block = vec![0;BLOCK_SIZE].leak();
+        let block = vec![0; BLOCK_SIZE].leak();
 
-        for i in (block_number-1)*BLOCK_SIZE .. data.len() {
+        for i in (block_number - 1) * BLOCK_SIZE..data.len() {
             block[i - (block_number - 1) * BLOCK_SIZE] = data[i];
         }
 

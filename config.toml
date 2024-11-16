@@ -2,6 +2,6 @@
 modules = ["hello"]
 
 [initramfs]
-modules = []
-users = ["hello1"]
+modules = ["hello","cracker"]
+users = ["shell"]
 init = "init"

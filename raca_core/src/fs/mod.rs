@@ -1,12 +1,13 @@
 pub mod cache;
 pub mod dev;
+pub mod operation;
 pub mod ramfs;
 pub mod vfs;
-pub mod operation;
 
 use core::{ffi::CStr, slice::from_raw_parts};
 
 use alloc::{boxed::Box, vec};
+use dev::Terminal;
 use limine::request::ModuleRequest;
 use ramfs::create_ramfs_from_cpio;
 use spin::Lazy;
@@ -49,6 +50,16 @@ pub static ROOT: Lazy<FileRef> = Lazy::new(|| {
 });
 
 pub fn init() {
+    ROOT.write()
+        .get_child("dev")
+        .unwrap()
+        .write()
+        .add_child(FileRef::new(
+            Inode::new(Terminal, InodeType::File),
+            FileType::CharDevice,
+            "terminal".into(),
+            Path::new("/dev/terminal"),
+        ));
 
     let font_file = ROOT.read().get_child("FiraCodeNotoSans.ttf").unwrap();
 
@@ -56,6 +67,10 @@ pub fn init() {
 
     font_file.read().read_at(0, &mut data);
 
-    TERMINAL.lock().set_font_manager(Box::new(os_terminal::font::TrueTypeFont::new(11.0, data.leak())));
-
+    TERMINAL
+        .lock()
+        .set_font_manager(Box::new(os_terminal::font::TrueTypeFont::new(
+            11.0,
+            data.leak(),
+        )));
 }

@@ -10,6 +10,7 @@ use x86_64::VirtAddr;
 use super::gdt::DOUBLE_FAULT_IST_INDEX;
 use crate::arch::apic::LAPIC;
 use crate::device::terminal::TERMINAL;
+use crate::fs::dev::KEYBOARD_INPUT;
 use crate::task::SCHEDULER;
 
 const INTERRUPT_INDEX_OFFSET: u8 = 32;
@@ -113,7 +114,8 @@ extern "x86-interrupt" fn keyboard_interrupt(_frame: InterruptStackFrame) {
     let scancode: u8 = unsafe { PortReadOnly::new(0x60).read() };
     let string_option = TERMINAL.lock().handle_keyboard(scancode).clone();
     if let Some(string) = string_option {
-        crate::print!("{}",string);
+        let mut keyboard_input = KEYBOARD_INPUT.lock();
+        keyboard_input.push_str(&string);
     }
     super::apic::end_of_interrupt();
 }

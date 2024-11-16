@@ -1,4 +1,7 @@
-use core::{mem::{transmute, variant_count}, sync::atomic::{AtomicUsize, Ordering}};
+use core::{
+    mem::{transmute, variant_count},
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
 use alloc::collections::btree_map::BTreeMap;
 use spin::Mutex;
@@ -13,6 +16,7 @@ mod user;
 pub use kernel::*;
 pub use user::*;
 
+#[derive(Debug)]
 pub enum OpenMode {
     Read = 0,
     Write = 1,
@@ -34,7 +38,7 @@ pub type FileDescriptor = usize;
 type FileTuple = (FileRef, OpenMode, usize);
 
 pub struct FileDescriptorManager {
-    file_descriptors: BTreeMap<FileDescriptor, FileTuple>,
+    pub file_descriptors: BTreeMap<FileDescriptor, FileTuple>,
     file_descriptor_allocator: AtomicUsize,
     cwd: Mutex<FileRef>,
 }
@@ -43,7 +47,7 @@ impl FileDescriptorManager {
     pub fn new(file_descriptors: BTreeMap<FileDescriptor, FileTuple>) -> Self {
         Self {
             file_descriptors,
-            file_descriptor_allocator: AtomicUsize::new(0), 
+            file_descriptor_allocator: AtomicUsize::new(0),
             cwd: Mutex::new(ROOT.clone()),
         }
     }
@@ -55,9 +59,7 @@ impl FileDescriptorManager {
 
     pub fn add_file(&mut self, file: FileRef, mode: OpenMode) -> FileDescriptor {
         let new_fd = self.get_new_fd();
-        self
-            .file_descriptors
-            .insert(new_fd, (file, mode, 0));
+        self.file_descriptors.insert(new_fd, (file, mode, 0));
         new_fd
     }
 

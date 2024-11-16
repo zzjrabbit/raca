@@ -3,10 +3,10 @@
 
 extern crate alloc;
 
-use core::panic::PanicInfo;
 use alloc::vec;
+use core::panic::PanicInfo;
 use limine::BaseRevision;
-use raca_core::{fs::ROOT, task::Process};
+use raca_core::{fs::{operation::kernel_open, Path, ROOT}, task::Process};
 
 #[used]
 #[link_section = ".requests"]
@@ -22,9 +22,10 @@ pub extern "C" fn main() -> ! {
     let mut data = vec![0; init_file.read().len()];
 
     init_file.read().read_at(0, &mut data);
-    Process::new_user_process("init", data.leak());
 
-    log::info!("racaOS v{} init program started!",core::env!("CARGO_PKG_VERSION"));
+    let terminal = kernel_open(Path::new("/dev/terminal")).unwrap();
+
+    Process::new_user_process("init", data.leak(),terminal.clone(), terminal.clone());
 
     loop {
         x86_64::instructions::hlt();

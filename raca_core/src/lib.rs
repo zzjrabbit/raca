@@ -7,6 +7,7 @@
 #![feature(naked_functions)]
 #![feature(generic_const_exprs)]
 #![feature(variant_count)]
+#![feature(string_from_utf8_lossy_owned)]
 
 extern crate alloc;
 
@@ -21,6 +22,7 @@ pub mod task;
 
 pub fn init() {
     memory::init_heap();
+    module::init_module();
     device::log::init();
     arch::smp::CPUS.write().init_bsp();
     arch::interrupts::IDT.load();
@@ -29,7 +31,6 @@ pub fn init() {
     syscall::init();
     fs::init();
     task::init();
-
 
     log::info!("racaOS intialization completed!");
 }

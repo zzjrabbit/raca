@@ -64,7 +64,7 @@ fn build_user_program(name: &str, images_path: PathBuf, user_program_name: Optio
     cmd.arg("--package").arg(name);
     cmd.arg("--release");
     cmd.arg("--target").arg("x86_64-unknown-none");
-    
+
     let mut child = cmd.spawn().unwrap();
     child.wait().unwrap();
 
@@ -169,7 +169,7 @@ fn main() {
     let initramfs_path = PathBuf::from("initramfs");
 
     for module in initramfs_config.get("modules").unwrap().as_array().unwrap() {
-        build_module(module.as_str().unwrap(), initramfs_path.clone(), None);
+        build_module(module.as_str().unwrap(), initramfs_path.clone().join("modules"), None);
     }
 
     for user_program in initramfs_config.get("users").unwrap().as_array().unwrap() {

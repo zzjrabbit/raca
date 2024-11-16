@@ -14,10 +14,16 @@ use crate::{arch::gdt::Selectors, error::RcError};
 mod consts;
 mod debug;
 mod fs;
+mod memory;
+mod task;
+mod kernel;
 
 use consts::SyscallIndex;
 use debug::*;
 use fs::*;
+use memory::*;
+use task::*;
+use kernel::*;
 
 #[naked]
 extern "C" fn asm_syscall_handler() {
@@ -81,7 +87,6 @@ pub extern "C" fn syscall_handler(
     arg4: usize,
     arg5: usize,
 ) -> isize {
-
     //log::info!("number : {}", syscall_number_raw);
 
     let sys_type = match SyscallIndex::try_from(syscall_number_raw) {
@@ -89,19 +94,17 @@ pub extern "C" fn syscall_handler(
         Err(_) => return RcError::INVALID_ARGS as isize,
     };
 
-    log::info!(
-        "syscall {:?} {} {} {} {} {}",
-        sys_type,
-        arg1,
-        arg2,
-        arg3,
-        arg4,
-        arg5,
-    );
-
     let ret = match sys_type {
         SyscallIndex::Debug => debug(arg1, arg2),
         SyscallIndex::Open => open(arg1, arg2, arg3),
+        SyscallIndex::Malloc => malloc(arg1, arg2),
+        SyscallIndex::Read => read(arg1, arg2, arg3),
+        SyscallIndex::Write => write(arg1, arg2, arg3),
+        SyscallIndex::Lseek => lseek(arg1, arg2),
+        SyscallIndex::Close => close(arg1),
+        SyscallIndex::Fsize => fsize(arg1),
+        SyscallIndex::CreateProcess => create_process(arg1),
+        SyscallIndex::InsertModule => insert_module(arg1, arg2),
     };
 
     match ret {

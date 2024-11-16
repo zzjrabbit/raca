@@ -1,4 +1,7 @@
-use core::{fmt::Debug, ops::{Deref, DerefMut}};
+use core::{
+    fmt::Debug,
+    ops::{Deref, DerefMut},
+};
 
 use alloc::{
     collections::btree_map::BTreeMap,
@@ -27,7 +30,6 @@ impl FileRef {
     }
 
     pub fn create_dir(&self, relative_path: Path) -> FileRef {
-
         let relative_path = {
             let mut temp = relative_path.clone();
             temp.delete_end_spliters();
@@ -49,7 +51,6 @@ impl FileRef {
             if let Some(child) = child {
                 current = child;
             } else {
-                
                 current_relative_path = current_relative_path.join(parent.clone());
 
                 let child_dir = FileRef::new(
