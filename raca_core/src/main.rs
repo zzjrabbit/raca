@@ -31,7 +31,7 @@ pub extern "C" fn main() -> ! {
     Process::new_user_process("init", data.leak(), terminal.clone(), terminal.clone());
 
     //raca_core::arch::acpi::shutdown();
-    
+
     loop {
         x86_64::instructions::hlt();
     }

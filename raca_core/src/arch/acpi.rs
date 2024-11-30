@@ -105,7 +105,6 @@ fn shutdown_handler(_frame: InterruptStackFrame) {
     reboot();
 }
 
-
 pub fn shutdown() {
     disable();
     let fadt = &ACPI.fadt;
@@ -320,4 +319,3 @@ impl aml::Handler for AmlHandlerImpl {
         unimplemented!()
     }
 }
-
