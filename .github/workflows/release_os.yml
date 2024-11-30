@@ -2,7 +2,7 @@ name: Create Release
   
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "edition16" ]
     paths-ignore:
       - 'README.md'
       - '.gitignore'
