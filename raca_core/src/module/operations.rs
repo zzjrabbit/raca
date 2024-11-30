@@ -40,7 +40,6 @@ pub extern "C" fn add_interrupt_handler(handler: u64) -> u8 {
 }
 
 pub extern "C" fn enable_irq_to(irq: u8, vector: u8) {
-    //log::info!("enabling irq {} to {}", irq, vector);
     unsafe {
         crate::arch::apic::ioapic_add_entry(irq, vector);
     }

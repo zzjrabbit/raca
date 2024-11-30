@@ -1,7 +1,6 @@
 use alloc::collections::btree_map::BTreeMap;
 use spin::Lazy;
 use x86_64::instructions::port::PortReadOnly;
-//use x86_64::instructions::port::PortReadOnly;
 use x86_64::registers::control::Cr2;
 use x86_64::structures::idt::InterruptDescriptorTable;
 use x86_64::structures::idt::InterruptStackFrame;
@@ -22,8 +21,6 @@ pub enum InterruptIndex {
     Timer = INTERRUPT_INDEX_OFFSET,
     ApicError,
     ApicSpurious,
-    //    Keyboard,
-    //    Mouse,
 }
 
 const BASE: u8 = InterruptIndex::ApicSpurious as u8 + 1;
@@ -41,8 +38,6 @@ pub static IDT: Lazy<InterruptDescriptorTable> = Lazy::new(|| {
     idt[InterruptIndex::Timer as u8].set_handler_fn(timer_interrupt);
     idt[InterruptIndex::ApicError as u8].set_handler_fn(lapic_error);
     idt[InterruptIndex::ApicSpurious as u8].set_handler_fn(spurious_interrupt);
-    //idt[InterruptIndex::Keyboard as u8].set_handler_fn(keyboard_interrupt);
-    //idt[InterruptIndex::Mouse as u8].set_handler_fn(mouse_interrupt);
 
     macro_rules! other_int_regist {
         ($id: expr) => {{
@@ -135,7 +130,6 @@ static HANDLERS: Mutex<BTreeMap<u8, HandlerFunction>> = Mutex::new(BTreeMap::new
 
 fn other_interrupt(int: u8, frame: InterruptStackFrame) {
     HANDLERS.lock().get(&int).unwrap()(frame);
-    //log::info!("int {} handled", int);
 }
 
 pub fn add_interrupt_handler(handler: HandlerFunction) -> u8 {
@@ -143,7 +137,6 @@ pub fn add_interrupt_handler(handler: HandlerFunction) -> u8 {
     let index = interrupt_handlers.len() as u8;
     interrupt_handlers.insert(index, handler);
     let vector = index + BASE;
-    //log::info!("added int handler for int {}", vector);
     vector
 }
 
@@ -206,22 +199,6 @@ extern "x86-interrupt" fn double_fault(frame: InterruptStackFrame, error_code: u
     log::error!("Error Code: {:#x}", error_code);
     panic!("Unrecoverable fault occured, halting!");
 }
-
-/*extern "x86-interrupt" fn keyboard_interrupt(_frame: InterruptStackFrame) {
-    let scancode: u8 = unsafe { PortReadOnly::new(0x60).read() };
-    let string_option = TERMINAL.lock().handle_keyboard(scancode).clone();
-    if let Some(string) = string_option {
-        let mut keyboard_input = KEYBOARD_INPUT.lock();
-        keyboard_input.push_str(&string);
-    }
-    super::apic::end_of_interrupt();
-}
-
-extern "x86-interrupt" fn mouse_interrupt(_frame: InterruptStackFrame) {
-    //let packet = unsafe { PortReadOnly::new(0x60).read() };
-    //crate::device::mouse::MOUSE.lock().process_packet(packet);
-    super::apic::end_of_interrupt();
-}*/
 
 extern "x86-interrupt" fn page_fault(frame: InterruptStackFrame, error_code: PageFaultErrorCode) {
     log::warn!("Processor: {}", unsafe { LAPIC.lock().id() });

@@ -86,7 +86,6 @@ pub unsafe fn ioapic_add_entry(irq: u8, vector: u8) {
     entry.set_vector(vector);
     ioapic.set_table_entry(irq, entry);
     ioapic.enable_irq(irq);
-    //log::info!("added ioapic entry for irq {}", irq);
 }
 
 pub unsafe fn calibrate_timer() {
