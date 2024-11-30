@@ -31,11 +31,12 @@ Please look at
 - [x] Real machine x2APIC interrupts
 - [x] Memory management
 - [x] SMP
-- [x] AHCI driver
+- [x] ACPI
+- [ ] AHCI driver
 - [x] File system
 - [x] Kernel Module loading
 - [ ] Start time calculation
-- [ ] Chinese display
+- [x] Chinese display
 - [ ] Perfect GUI
 - [ ] Log in with passwords
 - [ ] Network drivers
