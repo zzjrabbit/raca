@@ -14,7 +14,10 @@ pub static KERNEL_SYMBOL_TABLE: Lazy<BTreeMap<String, u64>> = Lazy::new(|| {
     symbol_table.insert("dealloc".into(), dealloc as u64);
     symbol_table.insert("add_interrupt_handler".into(), add_interrupt_handler as u64);
     symbol_table.insert("enable_irq_to".into(), enable_irq_to as u64);
-    symbol_table.insert("add_keyboard_scan_code".into(), add_keyboard_scan_code as u64);
+    symbol_table.insert(
+        "add_keyboard_scan_code".into(),
+        add_keyboard_scan_code as u64,
+    );
     symbol_table.insert("end_of_interrupt".into(), end_of_interrupt as u64);
     symbol_table
 });

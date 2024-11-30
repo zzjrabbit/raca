@@ -22,8 +22,8 @@ pub enum InterruptIndex {
     Timer = INTERRUPT_INDEX_OFFSET,
     ApicError,
     ApicSpurious,
-//    Keyboard,
-//    Mouse,
+    //    Keyboard,
+    //    Mouse,
 }
 
 const BASE: u8 = InterruptIndex::ApicSpurious as u8 + 1;
@@ -43,19 +43,17 @@ pub static IDT: Lazy<InterruptDescriptorTable> = Lazy::new(|| {
     idt[InterruptIndex::ApicSpurious as u8].set_handler_fn(spurious_interrupt);
     //idt[InterruptIndex::Keyboard as u8].set_handler_fn(keyboard_interrupt);
     //idt[InterruptIndex::Mouse as u8].set_handler_fn(mouse_interrupt);
-    
-    macro_rules!  other_int_regist {
-        ($id: expr) => {
-            {
-                extern "x86-interrupt" fn handler(frame: InterruptStackFrame) {
-                    other_interrupt($id, frame);
-                }
-                
-                idt[$id + BASE].set_handler_fn(handler);
+
+    macro_rules! other_int_regist {
+        ($id: expr) => {{
+            extern "x86-interrupt" fn handler(frame: InterruptStackFrame) {
+                other_interrupt($id, frame);
             }
-        }
+
+            idt[$id + BASE].set_handler_fn(handler);
+        }};
     }
-    
+
     other_int_regist!(0);
     other_int_regist!(1);
     other_int_regist!(2);
@@ -120,7 +118,7 @@ pub static IDT: Lazy<InterruptDescriptorTable> = Lazy::new(|| {
     other_int_regist!(61);
     other_int_regist!(62);
     other_int_regist!(63);
-    
+
     unsafe {
         idt.double_fault
             .set_handler_fn(double_fault)
@@ -135,7 +133,7 @@ use spin::*;
 type HandlerFunction = fn(frame: InterruptStackFrame);
 static HANDLERS: Mutex<BTreeMap<u8, HandlerFunction>> = Mutex::new(BTreeMap::new());
 
-fn other_interrupt(int: u8,frame: InterruptStackFrame) {
+fn other_interrupt(int: u8, frame: InterruptStackFrame) {
     HANDLERS.lock().get(&int).unwrap()(frame);
     //log::info!("int {} handled", int);
 }

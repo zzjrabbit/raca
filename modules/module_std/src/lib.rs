@@ -2,10 +2,10 @@
 
 extern crate alloc;
 
+pub mod driver;
 #[doc(hidden)]
 pub mod io;
 mod memory;
-pub mod driver;
 
 #[repr(C)]
 #[allow(dead_code)]

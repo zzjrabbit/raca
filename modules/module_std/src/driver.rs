@@ -7,7 +7,7 @@ pub struct IrqHandler {
     pub handle_function: IrqHandleFunction,
 }
 
-extern {
+extern "C" {
     fn add_interrupt_handler(handler: u64) -> u8;
     fn enable_irq_to(irq: u8, vector: u8);
     fn add_keyboard_scan_code(scan_code: u8);
@@ -20,7 +20,7 @@ pub fn append_keyboard_scan_code(scan_code: u8) {
 }
 
 pub fn end_of_interrupt() {
-    extern {
+    extern "C" {
         fn end_of_interrupt();
     }
     unsafe {
@@ -30,9 +30,12 @@ pub fn end_of_interrupt() {
 
 impl IrqHandler {
     pub fn new(irq: u8, handle_function: IrqHandleFunction) -> Self {
-        Self { irq, handle_function }
+        Self {
+            irq,
+            handle_function,
+        }
     }
-    
+
     pub fn register(&self) {
         unsafe {
             let vector = add_interrupt_handler(self.handle_function as u64);

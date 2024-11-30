@@ -28,6 +28,7 @@ pub fn init() {
     arch::interrupts::IDT.load();
     arch::smp::CPUS.write().init_ap();
     arch::apic::init();
+    arch::acpi::init();
     syscall::init();
     fs::init();
     module::probe();

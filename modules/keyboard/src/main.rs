@@ -1,6 +1,6 @@
 #![no_std]
 #![no_main]
-use module_std::{driver::end_of_interrupt, kernel_module, print, println, KernelModule};
+use module_std::{KernelModule, driver::end_of_interrupt, kernel_module, print, println};
 use x86_64::structures::idt::InterruptStackFrame;
 
 kernel_module!(Keyboard, keyboard, Apache);

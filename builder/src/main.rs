@@ -186,11 +186,11 @@ fn main() {
 
     //build_image_from_dir("initrd", "esp/initrd");
     build_initramfs();
-    
+
     println!("initramfs built!");
 
     build_image_from_dir("esp", "racaOS.img");
-    
+
     println!("image built!");
 
     let args: Args = argh::from_env();

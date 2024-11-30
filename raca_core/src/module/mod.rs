@@ -12,9 +12,9 @@ use operations::*;
 use talc::*;
 use x86_64::VirtAddr;
 
-mod probe;
 mod load;
 mod operations;
+mod probe;
 
 pub use probe::probe;
 
