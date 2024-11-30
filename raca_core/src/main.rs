@@ -6,7 +6,10 @@ extern crate alloc;
 use alloc::vec;
 use core::panic::PanicInfo;
 use limine::BaseRevision;
-use raca_core::{fs::{operation::kernel_open, Path, ROOT}, task::Process};
+use raca_core::{
+    fs::{operation::kernel_open, Path, ROOT},
+    task::Process,
+};
 
 #[used]
 #[link_section = ".requests"]
@@ -25,7 +28,7 @@ pub extern "C" fn main() -> ! {
 
     let terminal = kernel_open(Path::new("/dev/terminal")).unwrap();
 
-    Process::new_user_process("init", data.leak(),terminal.clone(), terminal.clone());
+    Process::new_user_process("init", data.leak(), terminal.clone(), terminal.clone());
 
     loop {
         x86_64::instructions::hlt();

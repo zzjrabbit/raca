@@ -26,7 +26,12 @@ impl FileRef {
             path,
             children: BTreeMap::new(),
         };
-        Self(Arc::new(RwLock::new(file)))
+        let n = Self(Arc::new(RwLock::new(file)));
+        if file_type == FileType::Dir {
+            n.write().children.insert(".".into(), n.clone());
+        }
+
+        n
     }
 
     pub fn create_dir(&self, relative_path: Path) -> FileRef {
@@ -59,6 +64,10 @@ impl FileRef {
                     parent.to_string(),
                     current_relative_path.clone(),
                 );
+                child_dir
+                    .write()
+                    .children
+                    .insert("..".into(), current.clone());
                 current
                     .write()
                     .children

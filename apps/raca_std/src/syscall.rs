@@ -1,7 +1,9 @@
 #![allow(dead_code)]
 
+use crate::{result_from_isize, Result};
+
 #[naked]
-pub extern "C" fn syscall(
+extern "C" fn syscall_(
     _id: u64,
     _arg1: usize,
     _arg2: usize,
@@ -17,6 +19,19 @@ pub extern "C" fn syscall(
             "ret",
         )
     }
+}
+
+pub fn syscall(
+    id: u64,
+    arg1: usize,
+    arg2: usize,
+    arg3: usize,
+    arg4: usize,
+    arg5: usize,
+) -> Result<usize> {
+    let result = syscall_(id, arg1, arg2, arg3, arg4, arg5);
+
+    result_from_isize(result)
 }
 
 #[naked]

@@ -4,7 +4,7 @@ use alloc::sync::Arc;
 use spin::RwLock;
 use syscall_macro::syscall;
 
-use crate::path::Path;
+use crate::{path::Path, Result};
 
 #[repr(u8)]
 pub enum OpenMode {
@@ -13,31 +13,23 @@ pub enum OpenMode {
     ReadWrite = 2,
 }
 
-struct FileDescriptorInner(usize,bool);
+struct FileDescriptorInner(usize, bool);
 
 impl FileDescriptorInner {
     /// This opens a file at `path` with mode `open_mode` \
     /// The file will be closed when the file descriptor is dropped.
-    pub fn open(path: Path, open_mode: OpenMode) -> Result<Self, ()> {
+    pub fn open(path: Path, open_mode: OpenMode) -> Result<Self> {
         const OPEN_SYSCALL_ID: u64 = 1;
 
-        let (ptr,len) = path.to_os_union();
+        let (ptr, len) = path.to_os_union();
 
-        let fd = syscall!(
-            OPEN_SYSCALL_ID,
-            ptr,
-            len,
-            open_mode as usize,
-        );
-        if fd < 0 {
-            Err(())
-        } else {
-            Ok(Self(fd as usize, false))
-        }
+        let fd = syscall!(OPEN_SYSCALL_ID, ptr, len, open_mode as usize,)?;
+
+        Ok(Self(fd, false))
     }
 
     /// Read something to the buffer.
-    pub fn read(&self, buffer: &mut [u8]) -> isize {
+    pub fn read(&self, buffer: &mut [u8]) -> Result<usize> {
         assert_ne!(self.1, true, "This File Descriptor had been closed!");
 
         const READ_SYSCALL_ID: u64 = 3;
@@ -55,16 +47,16 @@ impl FileDescriptorInner {
         while readed < buffer.len() {
             let read_size = self.read(&mut buffer[readed..]);
 
-            if read_size < 0 {
+            if let Err(_) = read_size {
                 continue;
             }
 
-            readed += read_size as usize;
+            readed += read_size.unwrap();
         }
     }
 
     /// Write something to the file.
-    pub fn write(&self, buffer: &[u8]) -> isize {
+    pub fn write(&self, buffer: &[u8]) -> Result<usize> {
         assert_ne!(self.1, true, "This File Descriptor had been closed!");
 
         const WRITE_SYSCALL_ID: u64 = 4;
@@ -77,7 +69,7 @@ impl FileDescriptorInner {
     }
 
     /// Seek to the specified position.
-    pub fn seek(&self, offset: usize) -> isize {
+    pub fn seek(&self, offset: usize) -> Result<usize> {
         assert_ne!(self.1, true, "This File Descriptor had been closed!");
 
         const LSEEK_SYSCALL_ID: u64 = 5;
@@ -85,7 +77,7 @@ impl FileDescriptorInner {
     }
 
     /// Get the size of the file.
-    pub fn size(&self) -> isize {
+    pub fn size(&self) -> Result<usize> {
         assert_ne!(self.1, true, "This File Descriptor had been closed!");
 
         const FSIZE_SYSCALL_ID: u64 = 7;
@@ -96,7 +88,7 @@ impl FileDescriptorInner {
         self.1 = true;
 
         const CLOSE_SYSCALL_ID: u64 = 6;
-        syscall!(CLOSE_SYSCALL_ID, self.0,);
+        let _ = syscall!(CLOSE_SYSCALL_ID, self.0,);
     }
 }
 
@@ -114,11 +106,13 @@ impl File {
         Self(Arc::new(RwLock::new(FileDescriptorInner(fd, false))))
     }
 
-    pub fn open(path: Path, open_mode: OpenMode) -> Result<Self,()> {
-        Ok(Self(Arc::new(RwLock::new(FileDescriptorInner::open(path, open_mode)?))))
+    pub fn open(path: Path, open_mode: OpenMode) -> Result<Self> {
+        Ok(Self(Arc::new(RwLock::new(FileDescriptorInner::open(
+            path, open_mode,
+        )?))))
     }
 
-    pub fn read(&self, buf: &mut [u8]) -> isize {
+    pub fn read(&self, buf: &mut [u8]) -> Result<usize> {
         self.0.read().read(buf)
     }
 
@@ -126,15 +120,15 @@ impl File {
         self.0.read().read_exact(buf);
     }
 
-    pub fn write(&self, buf: &[u8]) -> isize {
+    pub fn write(&self, buf: &[u8]) -> Result<usize> {
         self.0.read().write(buf)
     }
 
-    pub fn seek(&self, offset: usize) -> isize {
+    pub fn seek(&self, offset: usize) -> Result<usize> {
         self.0.read().seek(offset)
     }
 
-    pub fn size(&self) -> isize {
+    pub fn size(&self) -> Result<usize> {
         self.0.read().size()
     }
 
@@ -145,9 +139,7 @@ impl File {
 
 impl fmt::Write for File {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        self.write(s.as_bytes());
+        self.write(s.as_bytes()).map_err(|_| fmt::Error)?;
         Ok(())
     }
 }
-
-

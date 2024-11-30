@@ -1,3 +1,4 @@
+use alloc::collections::btree_map::BTreeMap;
 use spin::Lazy;
 use x86_64::instructions::port::PortReadOnly;
 //use x86_64::instructions::port::PortReadOnly;
@@ -21,9 +22,11 @@ pub enum InterruptIndex {
     Timer = INTERRUPT_INDEX_OFFSET,
     ApicError,
     ApicSpurious,
-    Keyboard,
-    Mouse,
+//    Keyboard,
+//    Mouse,
 }
+
+const BASE: u8 = InterruptIndex::ApicSpurious as u8 + 1;
 
 pub static IDT: Lazy<InterruptDescriptorTable> = Lazy::new(|| {
     let mut idt = InterruptDescriptorTable::new();
@@ -38,9 +41,86 @@ pub static IDT: Lazy<InterruptDescriptorTable> = Lazy::new(|| {
     idt[InterruptIndex::Timer as u8].set_handler_fn(timer_interrupt);
     idt[InterruptIndex::ApicError as u8].set_handler_fn(lapic_error);
     idt[InterruptIndex::ApicSpurious as u8].set_handler_fn(spurious_interrupt);
-    idt[InterruptIndex::Keyboard as u8].set_handler_fn(keyboard_interrupt);
-    idt[InterruptIndex::Mouse as u8].set_handler_fn(mouse_interrupt);
-
+    //idt[InterruptIndex::Keyboard as u8].set_handler_fn(keyboard_interrupt);
+    //idt[InterruptIndex::Mouse as u8].set_handler_fn(mouse_interrupt);
+    
+    macro_rules!  other_int_regist {
+        ($id: expr) => {
+            {
+                extern "x86-interrupt" fn handler(frame: InterruptStackFrame) {
+                    other_interrupt($id, frame);
+                }
+                
+                idt[$id + BASE].set_handler_fn(handler);
+            }
+        }
+    }
+    
+    other_int_regist!(0);
+    other_int_regist!(1);
+    other_int_regist!(2);
+    other_int_regist!(3);
+    other_int_regist!(4);
+    other_int_regist!(5);
+    other_int_regist!(6);
+    other_int_regist!(7);
+    other_int_regist!(8);
+    other_int_regist!(9);
+    other_int_regist!(10);
+    other_int_regist!(11);
+    other_int_regist!(12);
+    other_int_regist!(13);
+    other_int_regist!(14);
+    other_int_regist!(15);
+    other_int_regist!(16);
+    other_int_regist!(17);
+    other_int_regist!(18);
+    other_int_regist!(19);
+    other_int_regist!(20);
+    other_int_regist!(21);
+    other_int_regist!(22);
+    other_int_regist!(23);
+    other_int_regist!(24);
+    other_int_regist!(25);
+    other_int_regist!(26);
+    other_int_regist!(27);
+    other_int_regist!(28);
+    other_int_regist!(29);
+    other_int_regist!(30);
+    other_int_regist!(31);
+    other_int_regist!(32);
+    other_int_regist!(33);
+    other_int_regist!(34);
+    other_int_regist!(35);
+    other_int_regist!(36);
+    other_int_regist!(37);
+    other_int_regist!(38);
+    other_int_regist!(39);
+    other_int_regist!(40);
+    other_int_regist!(41);
+    other_int_regist!(42);
+    other_int_regist!(43);
+    other_int_regist!(44);
+    other_int_regist!(45);
+    other_int_regist!(46);
+    other_int_regist!(47);
+    other_int_regist!(48);
+    other_int_regist!(49);
+    other_int_regist!(50);
+    other_int_regist!(51);
+    other_int_regist!(52);
+    other_int_regist!(53);
+    other_int_regist!(54);
+    other_int_regist!(55);
+    other_int_regist!(56);
+    other_int_regist!(57);
+    other_int_regist!(58);
+    other_int_regist!(59);
+    other_int_regist!(60);
+    other_int_regist!(61);
+    other_int_regist!(62);
+    other_int_regist!(63);
+    
     unsafe {
         idt.double_fault
             .set_handler_fn(double_fault)
@@ -49,6 +129,25 @@ pub static IDT: Lazy<InterruptDescriptorTable> = Lazy::new(|| {
 
     return idt;
 });
+
+use spin::*;
+
+type HandlerFunction = fn(frame: InterruptStackFrame);
+static HANDLERS: Mutex<BTreeMap<u8, HandlerFunction>> = Mutex::new(BTreeMap::new());
+
+fn other_interrupt(int: u8,frame: InterruptStackFrame) {
+    HANDLERS.lock().get(&int).unwrap()(frame);
+    //log::info!("int {} handled", int);
+}
+
+pub fn add_interrupt_handler(handler: HandlerFunction) -> u8 {
+    let mut interrupt_handlers = HANDLERS.lock();
+    let index = interrupt_handlers.len() as u8;
+    interrupt_handlers.insert(index, handler);
+    let vector = index + BASE;
+    //log::info!("added int handler for int {}", vector);
+    vector
+}
 
 #[naked]
 extern "x86-interrupt" fn timer_interrupt(_frame: InterruptStackFrame) {
@@ -110,7 +209,7 @@ extern "x86-interrupt" fn double_fault(frame: InterruptStackFrame, error_code: u
     panic!("Unrecoverable fault occured, halting!");
 }
 
-extern "x86-interrupt" fn keyboard_interrupt(_frame: InterruptStackFrame) {
+/*extern "x86-interrupt" fn keyboard_interrupt(_frame: InterruptStackFrame) {
     let scancode: u8 = unsafe { PortReadOnly::new(0x60).read() };
     let string_option = TERMINAL.lock().handle_keyboard(scancode).clone();
     if let Some(string) = string_option {
@@ -124,7 +223,7 @@ extern "x86-interrupt" fn mouse_interrupt(_frame: InterruptStackFrame) {
     //let packet = unsafe { PortReadOnly::new(0x60).read() };
     //crate::device::mouse::MOUSE.lock().process_packet(packet);
     super::apic::end_of_interrupt();
-}
+}*/
 
 extern "x86-interrupt" fn page_fault(frame: InterruptStackFrame, error_code: PageFaultErrorCode) {
     log::warn!("Processor: {}", unsafe { LAPIC.lock().id() });

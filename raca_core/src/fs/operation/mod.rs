@@ -6,7 +6,7 @@ use core::{
 use alloc::collections::btree_map::BTreeMap;
 use spin::Mutex;
 
-use crate::error::{RcError, RcResult};
+use crate::error::*;
 
 use super::{FileRef, FileType, Path, ROOT};
 
@@ -24,10 +24,10 @@ pub enum OpenMode {
 }
 
 impl OpenMode {
-    pub fn from_usize(mode: usize) -> RcResult<Self> {
+    pub fn from_usize(mode: usize) -> Result<Self> {
         let length = variant_count::<Self>();
         if mode >= length {
-            Err(RcError::INVALID_ARGS)
+            Err(Error::InvalidOpenMode)
         } else {
             Ok(unsafe { transmute(mode as u8) })
         }

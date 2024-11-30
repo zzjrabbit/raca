@@ -57,8 +57,8 @@ pub fn init() {
         disable_pic();
         calibrate_timer();
 
-        ioapic_add_entry(IrqVector::Keyboard, InterruptIndex::Keyboard);
-        ioapic_add_entry(IrqVector::Mouse, InterruptIndex::Mouse);
+        //ioapic_add_entry(IrqVector::Keyboard, InterruptIndex::Keyboard);
+        //ioapic_add_entry(IrqVector::Mouse, InterruptIndex::Mouse);
     };
 
     APIC_INIT.store(true, Ordering::SeqCst);
@@ -77,15 +77,16 @@ unsafe fn disable_pic() {
     Port::<u8>::new(0xa1).write(0xff);
 }
 
-unsafe fn ioapic_add_entry(irq: IrqVector, vector: InterruptIndex) {
+pub unsafe fn ioapic_add_entry(irq: u8, vector: u8) {
     let lapic = LAPIC.lock();
     let mut ioapic = IOAPIC.lock();
     let mut entry = RedirectionTableEntry::default();
     entry.set_mode(IrqMode::Fixed);
     entry.set_dest(lapic.id() as u8);
-    entry.set_vector(vector as u8);
-    ioapic.set_table_entry(irq as u8, entry);
-    ioapic.enable_irq(irq as u8);
+    entry.set_vector(vector);
+    ioapic.set_table_entry(irq, entry);
+    ioapic.enable_irq(irq);
+    //log::info!("added ioapic entry for irq {}", irq);
 }
 
 pub unsafe fn calibrate_timer() {

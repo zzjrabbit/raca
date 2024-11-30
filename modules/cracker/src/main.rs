@@ -17,6 +17,5 @@ impl KernelModule for Cracker {
 }
 
 impl Drop for Cracker {
-    fn drop(&mut self) {
-    }
+    fn drop(&mut self) {}
 }

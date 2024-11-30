@@ -7,18 +7,14 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-use raca_std::{
-    io::stdin,
-    path::Path,
-    print, println,
-};
+use raca_std::{io::stdin, path::Path, print, println};
 
 extern crate alloc;
 
 mod commands;
 mod run;
 
-/* 
+/*
 ╭─ /run/me/r/兔/cod/r/racaOS16 on edition16 !40 ?15 \x1b[34m
 ╰─❯                                                                           ─╯─╯─╮
  */
@@ -59,13 +55,16 @@ pub fn main() -> usize {
         //command_function_list.insert("cd", cd);
         command_function_list.insert("echo", echo);
         command_function_list.insert("insmod", insmod);
-        //command_function_list.insert("exit", exit);
+        command_function_list.insert("exit", exit);
         //command_function_list.insert("ls", ls);
         //command_function_list.insert("mount", mount);
         //command_function_list.insert("write", write);
     }
 
-    println!("\n\x1b[34mRACA-Shell \x1b[31mv{}",env!("CARGO_PKG_VERSION"));
+    println!(
+        "\n\x1b[34mRACA-Shell \x1b[31mv{}",
+        env!("CARGO_PKG_VERSION")
+    );
     println!("\n\x1b[33mRemember to keep happy all the day when you open this shell! :)\n");
 
     let mut state = CmdState::Ok;
@@ -91,7 +90,9 @@ pub fn main() -> usize {
 
         if let Some(function) = function {
             function(args_);
-        } else if let None = run::try_run(Path::new(args[0].clone())) {
+        } else if let Some(state_) = run::try_run(Path::new(args[0].clone())) {
+            state = state_;
+        } else {
             if input_buf.len() > 0 {
                 println!("rash: command not found: \x1b[31m{}\x1b[0m", args[0]);
                 state = CmdState::Error;

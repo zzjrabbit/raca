@@ -3,7 +3,6 @@
 
 #[no_mangle]
 pub extern "C" fn main() -> usize {
-    loop {
-        raca_std::dummy();
-    }
+    raca_std::dummy();
+    1
 }

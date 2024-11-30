@@ -8,17 +8,16 @@ extern crate alloc;
 
 #[no_mangle]
 pub extern "C" fn main() -> usize {
-    raca_std::debug::debug("Initial user program started");
     let shell = File::open(Path::new("/bin/shell.rae"), raca_std::fs::OpenMode::Read).unwrap();
-    
-    let size = shell.size();
-    let mut data = vec![0;size as usize];
 
-    shell.read(&mut data);
+    let size = shell.size().unwrap();
+    let mut data = vec![0; size as usize];
 
-    let process = Process::new(data.leak(),"shell",0,1);
-    process.run();
-    
+    shell.read(&mut data).unwrap();
+
+    let process = Process::new(&data, "shell", 0, 1);
+    process.run().unwrap();
+
     loop {
         raca_std::dummy();
     }

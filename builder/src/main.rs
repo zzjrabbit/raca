@@ -169,7 +169,11 @@ fn main() {
     let initramfs_path = PathBuf::from("initramfs");
 
     for module in initramfs_config.get("modules").unwrap().as_array().unwrap() {
-        build_module(module.as_str().unwrap(), initramfs_path.clone().join("modules"), None);
+        build_module(
+            module.as_str().unwrap(),
+            initramfs_path.clone().join("modules"),
+            None,
+        );
     }
 
     for user_program in initramfs_config.get("users").unwrap().as_array().unwrap() {
@@ -182,8 +186,12 @@ fn main() {
 
     //build_image_from_dir("initrd", "esp/initrd");
     build_initramfs();
+    
+    println!("initramfs built!");
 
     build_image_from_dir("esp", "racaOS.img");
+    
+    println!("image built!");
 
     let args: Args = argh::from_env();
 
@@ -193,7 +201,7 @@ fn main() {
 
         cmd.arg("-device").arg("ahci,id=ahci");
         cmd.arg("-machine").arg("q35");
-        cmd.arg("-m").arg("4g");
+        cmd.arg("-m").arg("512m");
         cmd.arg("-pflash").arg("ovmf/x86_64.fd");
         cmd.arg("-drive").arg(drive_config);
         cmd.arg("-device").arg("ide-hd,drive=boot_disk,bus=ahci.0");

@@ -12,11 +12,18 @@ use spin::{Lazy, RwLock};
 use x86_64::{instructions::interrupts, structures::paging::OffsetPageTable, VirtAddr};
 
 use crate::{
-    fs::{operation::{FileDescriptorManager, OpenMode}, FileRef},
-    memory::{ExtendedPageTable, MappingType, MemoryManager, FRAME_ALLOCATOR, KERNEL_PAGE_TABLE},
+    fs::{
+        operation::{FileDescriptorManager, OpenMode},
+        FileRef,
+    },
+    memory::{ExtendedPageTable, MappingType, MemoryManager, KERNEL_PAGE_TABLE},
 };
 
-use super::thread::{SharedThread, Thread};
+use super::{
+    signal::SignalManager,
+    thread::{SharedThread, Thread},
+    SCHEDULER,
+};
 
 const KERNEL_PROCESS_NAME: &str = "kernel";
 
@@ -43,6 +50,8 @@ pub struct Process {
     pub page_table: OffsetPageTable<'static>,
     pub threads: Vec<SharedThread>,
     pub file_descriptor_manager: FileDescriptorManager,
+    pub signal_manager: SignalManager,
+    pub father: Option<WeakSharedProcess>,
 }
 
 impl Process {
@@ -53,6 +62,8 @@ impl Process {
             page_table: unsafe { KERNEL_PAGE_TABLE.lock().deep_copy() },
             threads: Default::default(),
             file_descriptor_manager: FileDescriptorManager::new(BTreeMap::new()),
+            signal_manager: SignalManager::new(64),
+            father: None,
         };
 
         process
@@ -64,12 +75,23 @@ impl Process {
         process
     }
 
-    pub fn new_user_process(name: &str, elf_data: &'static [u8], stdin: FileRef, stdout: FileRef) -> SharedProcess {
+    pub fn new_user_process(
+        name: &str,
+        elf_data: &'static [u8],
+        stdin: FileRef,
+        stdout: FileRef,
+    ) -> SharedProcess {
         let binary = ProcessBinary::parse(elf_data);
         interrupts::without_interrupts(|| {
             let process = Arc::new(RwLock::new(Box::new(Self::new(name))));
-            process.write().file_descriptor_manager.add_file(stdin,OpenMode::Read);
-            process.write().file_descriptor_manager.add_file(stdout, OpenMode::Write);
+            process
+                .write()
+                .file_descriptor_manager
+                .add_file(stdin, OpenMode::Read);
+            process
+                .write()
+                .file_descriptor_manager
+                .add_file(stdout, OpenMode::Write);
             ProcessBinary::map_segments(&binary, &mut process.write().page_table, None);
             Thread::new_user_thread(Arc::downgrade(&process), binary.entry() as usize);
             PROCESSES.write().push_back(process.clone());
@@ -78,6 +100,10 @@ impl Process {
     }
 
     pub fn exit_process(&self) {
+        for thread in self.threads.iter() {
+            SCHEDULER.lock().remove(Arc::downgrade(thread));
+        }
+
         let mut processes = PROCESSES.write();
         if let Some(index) = processes
             .iter()
@@ -102,7 +128,6 @@ impl ProcessBinary {
     ) {
         let base = base.unwrap_or(0);
         for segment in elf_file.segments() {
-            log::info!("Mapping {:?}", segment);
             let _ = MemoryManager::alloc_range(
                 VirtAddr::new(segment.address() as u64 + base),
                 segment.size(),
@@ -121,10 +146,5 @@ impl ProcessBinary {
 impl Drop for Process {
     fn drop(&mut self) {
         unsafe { self.page_table.free_user_page_table() };
-        log::info!("Process {} dropped", self.id.0);
-        log::info!(
-            "Available frames: {:?}",
-            FRAME_ALLOCATOR.lock().available_frames()
-        );
     }
 }

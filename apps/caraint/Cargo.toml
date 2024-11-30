@@ -1,0 +1,8 @@
+[package]
+name = "caraint"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cara = {path = "../cara",default-features=false}
+raca_std = {path = "../raca_std"}

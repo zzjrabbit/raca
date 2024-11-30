@@ -1,29 +1,27 @@
 use alloc::vec;
 use raca_std::{
-    fs::{File, OpenMode}, path::Path, task::Process
+    fs::{File, OpenMode},
+    path::Path,
+    task::{wait, Process},
 };
 
-pub fn try_run(path: Path) -> Option<()> {
-    if let Ok(mut file) = File::open(path, OpenMode::Read) {
+use crate::CmdState;
 
-        let mut buf = vec![0; file.size() as usize];
-        file.read(&mut buf);
+pub fn try_run(path: Path) -> Option<CmdState> {
+    if let Ok(mut file) = File::open(path, OpenMode::Read) {
+        let mut buf = vec![0; file.size().unwrap() as usize];
+        file.read(&mut buf).unwrap();
         file.close();
 
-        let process = Process::new(buf.leak(), "temp", 0, 0);
-        process.run();
-        //loop {
-        //    let mut buf = [0;1];
-        //    pipe2_read.read(&mut buf);
-        //    write!(fd, "{}", buf[0] as char).unwrap();
-        //}
-        //loop{}
-        //let code = wait();
-        //println!("exit code: {}", code);
-        //loop{
+        let process = Process::new(&buf, "temp", 0, 0);
+        process.run().unwrap();
 
-        //}
-        Some(())
+        let code = wait().unwrap();
+        Some(if code == 0 {
+            CmdState::Ok
+        } else {
+            CmdState::Error
+        })
     } else {
         None
     }

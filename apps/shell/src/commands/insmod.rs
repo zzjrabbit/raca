@@ -1,5 +1,10 @@
-use alloc::{string::String, vec::Vec, vec};
-use raca_std::{fs::{File, OpenMode}, kernel::insert_module, path::Path, println};
+use alloc::{string::String, vec, vec::Vec};
+use raca_std::{
+    fs::{File, OpenMode},
+    kernel::insert_module,
+    path::Path,
+    println,
+};
 
 pub fn insmod(args: Vec<String>) {
     if args.len() != 1 {
@@ -9,9 +14,9 @@ pub fn insmod(args: Vec<String>) {
 
     let path = Path::new(args[0].clone());
     if let Ok(module) = File::open(path, OpenMode::Read) {
-        let mut data = vec![0; module.size() as usize];
-        module.read(&mut data);
-        insert_module(&data);
+        let mut data = vec![0; module.size().unwrap()];
+        module.read(&mut data).unwrap();
+        insert_module(&data).unwrap();
     } else {
         println!("File not found!");
     }

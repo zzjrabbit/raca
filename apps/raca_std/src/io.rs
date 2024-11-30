@@ -58,14 +58,12 @@ impl Stdin {
     }
 }
 
-static STDIN: Lazy<File> = Lazy::new(|| unsafe {File::from_raw_fd(0)});
-static STDOUT: Lazy<File> = Lazy::new(|| unsafe {File::from_raw_fd(1)});
+static STDIN: Lazy<File> = Lazy::new(|| unsafe { File::from_raw_fd(0) });
+static STDOUT: Lazy<File> = Lazy::new(|| unsafe { File::from_raw_fd(1) });
 
 /// Get stdin
 pub fn stdin() -> Stdin {
-    Stdin {
-        fd: STDIN.clone(),
-    }
+    Stdin { fd: STDIN.clone() }
 }
 
 /// Get stdout

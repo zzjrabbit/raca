@@ -30,6 +30,7 @@ pub fn init() {
     arch::apic::init();
     syscall::init();
     fs::init();
+    module::probe();
     task::init();
 
     log::info!("racaOS intialization completed!");

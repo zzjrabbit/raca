@@ -2,22 +2,28 @@
 #![feature(naked_functions)]
 #![feature(stmt_expr_attributes)]
 #![feature(alloc_error_handler)]
+#![feature(variant_count)]
 
 extern crate alloc;
 
 use core::panic::PanicInfo;
 
+pub use task::exit;
+
 pub mod debug;
+mod error;
 pub mod fs;
-pub mod memory;
-pub mod path;
-pub mod task;
 pub mod io;
 pub mod kernel;
+pub mod memory;
+pub mod path;
 mod syscall;
+pub mod task;
+
+pub use error::*;
 
 extern "C" {
-    fn main();
+    fn main() -> usize;
 }
 
 pub fn dummy() {
@@ -28,13 +34,11 @@ pub fn dummy() {
 
 #[no_mangle]
 pub unsafe extern "sysv64" fn _start() -> ! {
-    memory::init_heap();
-    main();
-    loop {}
+    exit(main());
 }
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    println!("user panic: {}",info);
-    loop {}
+    println!("user panic: {}", info);
+    exit(1);
 }

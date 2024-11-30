@@ -7,3 +7,12 @@ edition = "2021"
 syscall_macro = { path = "../syscall_macro" }
 spin = "0.9.8"
 talc = "4.4.2"
+unwinding = { version = "0.2", default-features = false, features = [
+    "unwinder",
+    "fde-static",
+    "personality",
+    "panic",
+    "dwarf-expr",
+    "hide-trace",
+] }
+rustc-demangle = "0.1"

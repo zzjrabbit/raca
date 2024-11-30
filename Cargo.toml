@@ -1,5 +1,5 @@
 [workspace]
-members = ["builder", "modules/module_std", "modules/hello", "raca_core", "modules/fat32", "apps/raca_std", "apps/hello1", "apps/init", "apps/syscall_macro", "apps/shell", "modules/cracker"]
+members = ["builder", "modules/module_std", "modules/hello", "raca_core", "modules/fat32", "apps/raca_std", "apps/hello1", "apps/init", "apps/syscall_macro", "apps/shell", "modules/cracker", "apps/caraint", "crates/x2apic", "modules/keyboard"]
 default-members = ["builder"]
 resolver="2"
 

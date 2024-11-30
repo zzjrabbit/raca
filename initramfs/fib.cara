@@ -1,0 +1,19 @@
+fn fib(n) {
+    if n == 1 {
+        return 1;
+    }
+    if n == 2 {
+        return 1;
+    }
+    var a = 1;
+    var b = 1;
+    for i in (3,n+1) {
+        var t = a+b;
+        a = b;
+        b = t;
+    }
+    return b;
+}
+
+const test = fib(50000);
+print(test);

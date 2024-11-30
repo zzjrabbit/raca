@@ -12,8 +12,11 @@ use operations::*;
 use talc::*;
 use x86_64::VirtAddr;
 
+mod probe;
 mod load;
 mod operations;
+
+pub use probe::probe;
 
 pub const MODULE_START: usize = HEAP_END;
 pub const MODULE_SIZE: usize = 64 * 1024 * 1024;

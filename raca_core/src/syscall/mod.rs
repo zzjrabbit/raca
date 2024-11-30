@@ -9,21 +9,21 @@ use x86_64::{
     VirtAddr,
 };
 
-use crate::{arch::gdt::Selectors, error::RcError};
+use crate::{arch::gdt::Selectors, error::Error};
 
 mod consts;
 mod debug;
 mod fs;
+mod kernel;
 mod memory;
 mod task;
-mod kernel;
 
 use consts::SyscallIndex;
 use debug::*;
 use fs::*;
+use kernel::*;
 use memory::*;
 use task::*;
-use kernel::*;
 
 #[naked]
 extern "C" fn asm_syscall_handler() {
@@ -91,7 +91,7 @@ pub extern "C" fn syscall_handler(
 
     let sys_type = match SyscallIndex::try_from(syscall_number_raw) {
         Ok(index) => index,
-        Err(_) => return RcError::INVALID_ARGS as isize,
+        Err(_) => return Error::InvalidSyscall as isize,
     };
 
     let ret = match sys_type {
@@ -105,6 +105,11 @@ pub extern "C" fn syscall_handler(
         SyscallIndex::Fsize => fsize(arg1),
         SyscallIndex::CreateProcess => create_process(arg1),
         SyscallIndex::InsertModule => insert_module(arg1, arg2),
+        SyscallIndex::HasSignal => has_signal(arg1),
+        SyscallIndex::GetSignal => get_signal(arg1, arg2),
+        SyscallIndex::DoneSignal => done_signal(arg1),
+        SyscallIndex::StartWaitForSignal => start_wait_for_signal(arg1),
+        SyscallIndex::Exit => exit(arg1),
     };
 
     match ret {

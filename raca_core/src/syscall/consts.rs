@@ -14,6 +14,11 @@ pub enum SyscallIndex {
     Fsize = 7,
     CreateProcess = 8,
     InsertModule = 9,
+    HasSignal = 10,
+    GetSignal = 11,
+    DoneSignal = 12,
+    StartWaitForSignal = 13,
+    Exit = 14,
 }
 
 impl From<usize> for SyscallIndex {

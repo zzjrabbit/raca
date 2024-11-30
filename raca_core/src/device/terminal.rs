@@ -10,7 +10,7 @@ use crate::device::display::Display;
 pub static TERMINAL: Lazy<Mutex<Terminal<Display>>> = Lazy::new(|| {
     let mut terminal = Terminal::new(Display::new());
     terminal.set_font_manager(Box::new(BitmapFont));
-    terminal.set_color_scheme(8);
+    terminal.set_color_scheme(6);
     Mutex::new(terminal)
 });
 
