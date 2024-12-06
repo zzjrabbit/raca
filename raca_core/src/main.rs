@@ -12,10 +12,10 @@ use raca_core::{
 };
 
 #[used]
-#[link_section = ".requests"]
+#[unsafe(link_section = ".requests")]
 pub static BASE_REVISION: BaseRevision = BaseRevision::with_revision(1);
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn main() -> ! {
     raca_core::init();
 
@@ -28,9 +28,7 @@ pub extern "C" fn main() -> ! {
 
     let terminal = kernel_open(Path::new("/dev/terminal")).unwrap();
 
-    Process::new_user_process("init", data.leak(), terminal.clone(), terminal.clone());
-
-    //raca_core::arch::acpi::shutdown();
+    Process::new_user_process("init", data.leak(), terminal.clone(), terminal.clone()).unwrap();
 
     loop {
         x86_64::instructions::hlt();

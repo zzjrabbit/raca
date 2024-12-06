@@ -1,28 +1,19 @@
-use alloc::vec;
+use alloc::{string::String, vec::Vec};
 use raca_std::{
-    fs::{File, OpenMode},
     path::Path,
-    task::{wait, Process},
+    process::{wait, Command},
 };
 
 use crate::CmdState;
 
-pub fn try_run(path: Path) -> Option<CmdState> {
-    if let Ok(mut file) = File::open(path, OpenMode::Read) {
-        let mut buf = vec![0; file.size().unwrap() as usize];
-        file.read(&mut buf).unwrap();
-        file.close();
+pub fn try_run(args: Vec<String>) -> Option<CmdState> {
+    let path = Path::new(args[0].clone());
 
-        let process = Process::new(&buf, "temp", 0, 0);
-        process.run().unwrap();
-
-        let code = wait().unwrap();
-        Some(if code == 0 {
-            CmdState::Ok
-        } else {
-            CmdState::Error
-        })
-    } else {
-        None
+    let mut cmd = Command::new(path);
+    for arg in args.iter().skip(1) {
+        cmd.arg(arg.clone());
     }
+    cmd.spawn().ok()?;
+    wait().ok()?;
+    Some(CmdState::Ok)
 }

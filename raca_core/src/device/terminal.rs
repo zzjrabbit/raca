@@ -8,9 +8,15 @@ use x86_64::instructions::interrupts;
 use crate::device::display::Display;
 
 pub static TERMINAL: Lazy<Mutex<Terminal<Display>>> = Lazy::new(|| {
+    fn bell() {
+        crate::device::beeper::Speaker::new().beep(750, core::time::Duration::from_millis(200));
+        //log::info!("beep");
+    }
+
     let mut terminal = Terminal::new(Display::new());
     terminal.set_font_manager(Box::new(BitmapFont));
     terminal.set_color_scheme(6);
+    terminal.set_bell_handler(Some(bell));
     Mutex::new(terminal)
 });
 

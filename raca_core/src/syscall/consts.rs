@@ -19,6 +19,11 @@ pub enum SyscallIndex {
     DoneSignal = 12,
     StartWaitForSignal = 13,
     Exit = 14,
+    PowerOff = 15,
+    Reboot = 16,
+    CreateThread = 17,
+    YieldProcess = 18,
+    Sleep = 19,
 }
 
 impl From<usize> for SyscallIndex {

@@ -10,4 +10,5 @@ pub enum Error {
     AccessDenied = -5,
     FileDescriptorNotFound = -6,
     InvalidSyscall = -7,
+    ElfFileError = -8,
 }

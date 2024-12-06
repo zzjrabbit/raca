@@ -50,13 +50,13 @@ pub static IOAPIC: Lazy<Mutex<IoApic>> = Lazy::new(|| unsafe {
 pub enum IrqVector {
     Keyboard = 1,
     Mouse = 12,
+    HpetTimer,
 }
 
 pub fn init() {
     unsafe {
         disable_pic();
         calibrate_timer();
-
         //ioapic_add_entry(IrqVector::Keyboard, InterruptIndex::Keyboard);
         //ioapic_add_entry(IrqVector::Mouse, InterruptIndex::Mouse);
     };
@@ -73,8 +73,10 @@ pub fn end_of_interrupt() {
 }
 
 unsafe fn disable_pic() {
-    Port::<u8>::new(0x21).write(0xff);
-    Port::<u8>::new(0xa1).write(0xff);
+    unsafe {
+        Port::<u8>::new(0x21).write(0xff);
+        Port::<u8>::new(0xa1).write(0xff);
+    }
 }
 
 pub unsafe fn ioapic_add_entry(irq: u8, vector: u8) {
@@ -82,10 +84,12 @@ pub unsafe fn ioapic_add_entry(irq: u8, vector: u8) {
     let mut ioapic = IOAPIC.lock();
     let mut entry = RedirectionTableEntry::default();
     entry.set_mode(IrqMode::Fixed);
-    entry.set_dest(lapic.id() as u8);
+    entry.set_dest(unsafe {lapic.id()} as u8);
     entry.set_vector(vector);
-    ioapic.set_table_entry(irq, entry);
-    ioapic.enable_irq(irq);
+    unsafe {
+        ioapic.set_table_entry(irq, entry);
+        ioapic.enable_irq(irq);
+    }
 }
 
 pub unsafe fn calibrate_timer() {
@@ -93,17 +97,21 @@ pub unsafe fn calibrate_timer() {
     let mut lapic_total_ticks = 0;
 
     for _ in 0..TIMER_CALIBRATION_ITERATION {
-        let last_time = HPET.elapsed_ns();
-        lapic.set_timer_initial(!0);
-        while HPET.elapsed_ns() - last_time < 1_000_000 {}
-        lapic_total_ticks += !0 - lapic.timer_current();
+        let last_time = HPET.elapsed().as_nanos();
+        unsafe {
+            lapic.set_timer_initial(!0);
+        }
+        while HPET.elapsed().as_nanos() - last_time < 1_000_000 {}
+        lapic_total_ticks += !0 - unsafe {lapic.timer_current()};
     }
 
     let average_clock_per_ms = lapic_total_ticks / TIMER_CALIBRATION_ITERATION;
     let calibrated_timer_initial = average_clock_per_ms * 1000 / TIMER_FREQUENCY_HZ;
     log::debug!("Calibrated timer initial: {}", calibrated_timer_initial);
 
-    lapic.set_timer_mode(TimerMode::Periodic);
-    lapic.set_timer_initial(calibrated_timer_initial);
+    unsafe {
+        lapic.set_timer_mode(TimerMode::Periodic);
+        lapic.set_timer_initial(calibrated_timer_initial);
+    }
     CALIBRATED_TIMER_INITIAL.store(calibrated_timer_initial, Ordering::SeqCst);
 }

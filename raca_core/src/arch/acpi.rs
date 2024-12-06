@@ -4,7 +4,7 @@ use acpi::{AcpiHandler, AcpiTables, AmlTable, HpetInfo, PhysicalMapping};
 use acpi::{InterruptModel, PciConfigRegions};
 use alloc::alloc::Global;
 use alloc::boxed::Box;
-use aml::{AmlContext, AmlHandle, AmlName};
+use aml::{AmlContext, AmlName};
 use core::ptr::NonNull;
 use limine::request::RsdpRequest;
 use spin::Lazy;
@@ -16,7 +16,7 @@ use x86_64::{PhysAddr, VirtAddr};
 use crate::memory::{convert_physical_to_virtual, convert_virtual_to_physical};
 
 #[used]
-#[link_section = ".requests"]
+#[unsafe(link_section = ".requests")]
 static RSDP_REQUEST: RsdpRequest = RsdpRequest::new();
 
 pub static ACPI: Lazy<Acpi> = Lazy::new(|| {
@@ -87,7 +87,7 @@ pub static ACPI: Lazy<Acpi> = Lazy::new(|| {
 
 pub fn init() {
     let fadt = &ACPI.fadt;
-    let vector = crate::arch::interrupts::add_interrupt_handler(shutdown_handler);
+    let vector = crate::arch::interrupts::add_interrupt_handler(poweroff_handler);
     unsafe {
         crate::arch::apic::ioapic_add_entry(fadt.sci_interrupt as u8, vector);
     }
@@ -101,11 +101,11 @@ pub struct Acpi<'a> {
     pub dsdt: AmlTable,
 }
 
-fn shutdown_handler(_frame: InterruptStackFrame) {
+fn poweroff_handler(_frame: InterruptStackFrame) {
     reboot();
 }
 
-pub fn shutdown() {
+pub fn poweroff() {
     disable();
     let fadt = &ACPI.fadt;
     let dsdt = &ACPI.dsdt;
@@ -166,9 +166,9 @@ impl AcpiHandler for AcpiMemHandler {
         let virtual_address = {
             let physical_address = PhysAddr::new(physical_address as u64);
             let virtual_address = convert_physical_to_virtual(physical_address);
-            NonNull::new_unchecked(virtual_address.as_u64() as *mut T)
+            unsafe { NonNull::new_unchecked(virtual_address.as_u64() as *mut T) }
         };
-        PhysicalMapping::new(physical_address, virtual_address, size, size, self.clone())
+        unsafe { PhysicalMapping::new(physical_address, virtual_address, size, size, self.clone()) }
     }
 
     fn unmap_physical_region<T>(_region: &PhysicalMapping<Self, T>) {}

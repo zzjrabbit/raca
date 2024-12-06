@@ -68,7 +68,7 @@ impl Bitmap {
                 continue;
             }
 
-            if byte == byte_match && length < Self::BITS {
+            if byte == byte_match && length <= Self::BITS {
                 return Some(i * Self::BITS);
             }
 

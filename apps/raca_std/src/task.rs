@@ -11,10 +11,12 @@ pub struct Process {
     name_len: usize,
     stdin: usize,
     stdout: usize,
+    cmd_line_addr: usize,
+    cmd_line_len: usize,
 }
 
 impl Process {
-    pub fn new(binary: &[u8], name: &str, stdin: usize, stdout: usize) -> Self {
+    pub fn new(binary: &[u8], name: &str, stdin: usize, stdout: usize, cmd_line: &[u8]) -> Self {
         Self {
             binary_addr: binary.as_ptr() as usize,
             binary_len: binary.len(),
@@ -22,14 +24,16 @@ impl Process {
             name_len: name.len(),
             stdin,
             stdout,
+            cmd_line_addr: cmd_line.as_ptr() as usize,
+            cmd_line_len: cmd_line.len(),
         }
     }
 
-    pub fn run(&self) -> Result<()> {
+    pub fn run(&self) -> Result<usize> {
         const CREATE_PROCESS_SYSCALL_ID: u64 = 8;
 
         let ptr = self as *const _ as usize;
-        syscall!(CREATE_PROCESS_SYSCALL_ID, ptr).map(|_| ())
+        syscall!(CREATE_PROCESS_SYSCALL_ID, ptr)
     }
 }
 

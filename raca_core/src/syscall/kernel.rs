@@ -21,3 +21,13 @@ pub fn insert_module(module_addr: usize, module_len: usize) -> Result<usize> {
 
     Ok(ret)
 }
+
+pub fn reboot() -> Result<usize> {
+    crate::arch::acpi::reboot();
+    Ok(0)
+}
+
+pub fn poweroff() -> Result<usize> {
+    crate::arch::acpi::poweroff();
+    Ok(0)
+}

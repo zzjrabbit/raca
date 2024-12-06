@@ -3,6 +3,8 @@
 #![feature(stmt_expr_attributes)]
 #![feature(alloc_error_handler)]
 #![feature(variant_count)]
+#![feature(exact_size_is_empty)]
+#![allow(unsafe_op_in_unsafe_fn)]
 
 extern crate alloc;
 
@@ -11,18 +13,21 @@ use core::panic::PanicInfo;
 pub use task::exit;
 
 pub mod debug;
+pub mod env;
 mod error;
 pub mod fs;
 pub mod io;
 pub mod kernel;
 pub mod memory;
 pub mod path;
+pub mod process;
 mod syscall;
-pub mod task;
+mod task;
+pub mod thread;
 
 pub use error::*;
 
-extern "C" {
+unsafe extern "C" {
     fn main() -> usize;
 }
 
@@ -32,7 +37,7 @@ pub fn dummy() {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "sysv64" fn _start() -> ! {
     exit(main());
 }

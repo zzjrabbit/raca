@@ -110,6 +110,11 @@ pub extern "C" fn syscall_handler(
         SyscallIndex::DoneSignal => done_signal(arg1),
         SyscallIndex::StartWaitForSignal => start_wait_for_signal(arg1),
         SyscallIndex::Exit => exit(arg1),
+        SyscallIndex::PowerOff => poweroff(),
+        SyscallIndex::Reboot => reboot(),
+        SyscallIndex::CreateThread => create_thread(arg1, arg2 as u64),
+        SyscallIndex::YieldProcess => yield_thread(),
+        SyscallIndex::Sleep => sleep(arg1),
     };
 
     match ret {

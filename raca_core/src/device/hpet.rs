@@ -1,13 +1,15 @@
 use core::ptr;
+use core::time::Duration;
 use spin::Lazy;
 use x86_64::{PhysAddr, VirtAddr};
 
 use crate::arch::acpi::ACPI;
+use crate::arch::apic::IrqVector;
 use crate::memory::convert_physical_to_virtual;
 
 pub static HPET: Lazy<Hpet> = Lazy::new(|| {
     let physical_address = PhysAddr::new(ACPI.hpet_info.base_address as u64);
-    Hpet::new(convert_physical_to_virtual(physical_address))
+    Hpet::new(convert_physical_to_virtual(physical_address)).enable()
 });
 
 pub struct Hpet {
@@ -17,51 +19,68 @@ pub struct Hpet {
 
 impl Hpet {
     pub fn new(address: VirtAddr) -> Self {
-        let fms_per_tick = unsafe {
-            let value: u64 = ptr::read_volatile(address.as_ptr());
-            (value >> 32) as u32
-        };
+        let period_addr = (address + 0x4).as_ptr();
 
-        let hpet = Self {
+        Self {
             address,
-            fms_per_tick,
-        };
-
-        hpet.enable_counter();
-
-        hpet
+            fms_per_tick: unsafe { ptr::read_volatile(period_addr) },
+        }
     }
 
-    pub fn elapsed_ns(&self) -> u64 {
-        let elapsed_fms = self.elapsed_ticks() * self.fms_per_tick as u64;
-        elapsed_fms / 1_000_000
+    pub fn elapsed(&self) -> Duration {
+        let ticks = self.elapsed_ticks();
+        Duration::from_nanos(ticks * self.fms_per_tick as u64 / 1_000_000)
+    }
+
+    pub fn estimate(&self, duration: Duration) -> u64 {
+        let ticks = self.elapsed_ticks();
+        ticks + (duration.as_nanos() * 1_000_000 / self.fms_per_tick as u128) as u64
+    }
+
+    pub fn set_timer(&self, value: u64) {
+        let comparator_addr = self.address + 0x108;
+        unsafe {
+            ptr::write_volatile(comparator_addr.as_mut_ptr(), value);
+        }
+    }
+
+    pub fn busy_wait(&self, duration: Duration) {
+        let start = self.elapsed_ticks();
+        let ticks = duration.as_nanos() * 1_000_000 / self.fms_per_tick as u128;
+        while self.elapsed_ticks() < start + ticks as u64 {
+            core::hint::spin_loop()
+        }
+    }
+}
+
+fn hpet_handler(_frame: x86_64::structures::idt::InterruptStackFrame) {
+    crate::task::timer::TIMER.lock().wakeup();
+    crate::arch::apic::end_of_interrupt();
+}
+
+pub fn init() {
+    let vector = crate::arch::interrupts::add_interrupt_handler(hpet_handler);
+    let irq = IrqVector::HpetTimer as u8;
+    unsafe {
+        crate::arch::apic::ioapic_add_entry(irq, vector);
     }
 }
 
 impl Hpet {
-    fn enable_counter(&self) {
+    fn enable(self) -> Self {
+        let enable_cnf_addr = self.address + 0x10;
+        let timer_config_addr = self.address + 0x100;
         unsafe {
-            let configuration_addr = self.address + 0x10;
-            let old: u64 = ptr::read_volatile(configuration_addr.as_ptr());
-            ptr::write_volatile(configuration_addr.as_mut_ptr(), old | 1);
+            let old: u64 = ptr::read_volatile(enable_cnf_addr.as_ptr());
+            ptr::write_volatile(enable_cnf_addr.as_mut_ptr(), old | 1);
+            let timer_config = ((IrqVector::HpetTimer as u32) << 9) | (1 << 2);
+            ptr::write_volatile(timer_config_addr.as_mut_ptr(), timer_config);
         }
+        self
     }
 
     fn elapsed_ticks(&self) -> u64 {
-        unsafe {
-            let counter_l_addr = self.address + 0xf0;
-            let counter_h_addr = self.address + 0xf4;
-            loop {
-                let low: u32 = ptr::read_volatile(counter_l_addr.as_ptr());
-                let high1: u32 = ptr::read_volatile(counter_h_addr.as_ptr());
-                let high2 = ptr::read_volatile(counter_h_addr.as_ptr());
-
-                if high1 == high2 {
-                    return (high1 as u64) << 32 | low as u64;
-                }
-            }
-        }
+        let counter_addr = self.address + 0xf0;
+        unsafe { ptr::read_volatile(counter_addr.as_ptr()) }
     }
 }
-
-unsafe impl Sync for Hpet {}

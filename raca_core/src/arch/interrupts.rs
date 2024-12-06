@@ -1,6 +1,5 @@
 use alloc::collections::btree_map::BTreeMap;
 use spin::Lazy;
-use x86_64::instructions::port::PortReadOnly;
 use x86_64::registers::control::Cr2;
 use x86_64::structures::idt::InterruptDescriptorTable;
 use x86_64::structures::idt::InterruptStackFrame;
@@ -9,8 +8,6 @@ use x86_64::VirtAddr;
 
 use super::gdt::DOUBLE_FAULT_IST_INDEX;
 use crate::arch::apic::LAPIC;
-use crate::device::terminal::TERMINAL;
-use crate::fs::dev::KEYBOARD_INPUT;
 use crate::task::SCHEDULER;
 
 const INTERRUPT_INDEX_OFFSET: u8 = 32;

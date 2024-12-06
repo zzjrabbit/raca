@@ -17,10 +17,14 @@ unsafe extern "C" fn ap_entry(smp_info: &Cpu) -> ! {
     IDT.load();
 
     while !APIC_INIT.load(Ordering::SeqCst) {}
-    LAPIC.lock().enable();
+    unsafe {
+        LAPIC.lock().enable();
+    }
 
     let timer_initial = CALIBRATED_TIMER_INITIAL.load(Ordering::SeqCst);
-    LAPIC.lock().set_timer_initial(timer_initial);
+    unsafe {
+        LAPIC.lock().set_timer_initial(timer_initial);
+    }
 
     crate::syscall::init();
 

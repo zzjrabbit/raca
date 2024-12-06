@@ -22,6 +22,5 @@ impl KernelModule for Keyboard {
 }
 
 impl Drop for Keyboard {
-    fn drop(&mut self) {
-    }
+    fn drop(&mut self) {}
 }

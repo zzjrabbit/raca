@@ -52,6 +52,7 @@ pub struct Process {
     pub file_descriptor_manager: FileDescriptorManager,
     pub signal_manager: SignalManager,
     pub father: Option<WeakSharedProcess>,
+    pub cmd_line: Vec<u8>,
 }
 
 impl Process {
@@ -64,6 +65,7 @@ impl Process {
             file_descriptor_manager: FileDescriptorManager::new(BTreeMap::new()),
             signal_manager: SignalManager::new(64),
             father: None,
+            cmd_line: Vec::new(),
         };
 
         process
@@ -80,8 +82,8 @@ impl Process {
         elf_data: &'static [u8],
         stdin: FileRef,
         stdout: FileRef,
-    ) -> SharedProcess {
-        let binary = ProcessBinary::parse(elf_data);
+    ) -> crate::error::Result<SharedProcess> {
+        let binary = ProcessBinary::parse(elf_data)?;
         interrupts::without_interrupts(|| {
             let process = Arc::new(RwLock::new(Box::new(Self::new(name))));
             process
@@ -95,7 +97,7 @@ impl Process {
             ProcessBinary::map_segments(&binary, &mut process.write().page_table, None);
             Thread::new_user_thread(Arc::downgrade(&process), binary.entry() as usize);
             PROCESSES.write().push_back(process.clone());
-            process
+            Ok(process)
         })
     }
 
@@ -117,8 +119,8 @@ impl Process {
 pub struct ProcessBinary;
 
 impl ProcessBinary {
-    fn parse(bin: &'static [u8]) -> File<'static> {
-        File::parse(bin).expect("Failed to parse ELF binary")
+    fn parse(bin: &'static [u8]) -> crate::error::Result<File<'static>> {
+        File::parse(bin).map_err(|_| crate::error::Error::ElfFileError)
     }
 
     pub fn map_segments(

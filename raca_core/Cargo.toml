@@ -3,7 +3,7 @@ cargo-features = ["per-package-target"]
 [package]
 name = "raca_core"
 version = "16.0.0"
-edition = "2021"
+edition = "2024"
 forced-target = "x86_64-unknown-none"
 
 [dependencies]
@@ -18,10 +18,10 @@ x2apic = { path = "../crates/x2apic"}
 numeric-enum-macro = "0.2.0"
 cpio_reader = "0.1.1"
 aml = "0.16.4"
-
+derive-where = "1.2.7"
 
 [dependencies.os-terminal]
-version = "0.5.2"
+version = "0.5.4"
 features = ["truetype"]
 
 [dependencies.goblin]

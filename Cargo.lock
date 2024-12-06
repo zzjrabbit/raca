@@ -281,6 +281,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive-where"
+version = "1.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62d671cc41a825ebabc75757b62d3d168c577f9149b2d49ece1dad1f72119d25"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "either"
 version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -546,9 +557,9 @@ checksum = "1261fe7e33c73b354eab43b1273a57c8f967d0391e80353e51f764ac02cf6775"
 
 [[package]]
 name = "os-terminal"
-version = "0.5.2"
+version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e292296ac6cb45501eeb2934627c008a965497448f92419c75a77e3ffb4c9d2c"
+checksum = "fc20e52e4c72051012d1770f94c26aa3fdcc5cdb2686bac4a8905d5583fb352b"
 dependencies = [
  "ab_glyph",
  "bitflags 2.6.0",
@@ -612,6 +623,7 @@ dependencies = [
  "aml",
  "bit_field",
  "cpio_reader",
+ "derive-where",
  "goblin",
  "good_memory_allocator",
  "limine",

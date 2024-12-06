@@ -18,11 +18,11 @@ pub use manager::{MappingType, MemoryManager};
 pub use page_table::*;
 
 #[used]
-#[link_section = ".requests"]
+#[unsafe(link_section = ".requests")]
 static HHDM_REQUEST: HhdmRequest = HhdmRequest::new();
 
 #[used]
-#[link_section = ".requests"]
+#[unsafe(link_section = ".requests")]
 static MEMORY_MAP_REQUEST: MemoryMapRequest = MemoryMapRequest::new();
 
 pub static PHYSICAL_MEMORY_OFFSET: Lazy<u64> =
@@ -52,5 +52,7 @@ pub unsafe fn ref_current_page_table() -> OffsetPageTable<'static> {
     let physical_address = Cr3::read().0.start_address();
     let page_table = convert_physical_to_virtual(physical_address).as_mut_ptr::<PageTable>();
     let physical_memory_offset = VirtAddr::new(*PHYSICAL_MEMORY_OFFSET);
-    OffsetPageTable::new(&mut *page_table, physical_memory_offset)
+    unsafe {
+        OffsetPageTable::new(&mut *page_table, physical_memory_offset)
+    }
 }

@@ -8,7 +8,7 @@ use super::ap_entry;
 use super::gdt::CpuInfo;
 
 #[used]
-#[link_section = ".requests"]
+#[unsafe(link_section = ".requests")]
 static SMP_REQUEST: SmpRequest = SmpRequest::new();
 
 pub static CPUS: Lazy<RwLock<Cpus>> = Lazy::new(|| RwLock::new(Cpus::new()));

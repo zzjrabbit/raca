@@ -1,6 +1,7 @@
 #![no_std]
 #![allow(improper_ctypes)]
 #![allow(incomplete_features)]
+#![forbid(unsafe_op_in_unsafe_fn)]
 #![feature(alloc_error_handler)]
 #![feature(allocator_api)]
 #![feature(abi_x86_interrupt)]
@@ -32,6 +33,7 @@ pub fn init() {
     syscall::init();
     fs::init();
     module::probe();
+    device::hpet::init();
     task::init();
 
     log::info!("racaOS intialization completed!");

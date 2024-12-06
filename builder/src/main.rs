@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::env::args;
 use std::fs::File;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
@@ -154,7 +155,7 @@ fn main() {
 
     let images_path = PathBuf::from("esp");
 
-    let mut raca_core_dest = File::create(images_path.join("core.so")).unwrap();
+    let mut raca_core_dest = File::create(images_path.join("boot").join("core.so")).unwrap();
 
     io::copy(&mut raca_core_src, &mut raca_core_dest).unwrap();
 
@@ -225,6 +226,18 @@ fn main() {
         }
         if args.serial {
             cmd.arg("-serial").arg("stdio");
+        }
+
+        if let Some(backend) = match std::env::consts::OS {
+            "linux" => Some("pa"),
+            "macos" => Some("coreaudio"),
+            "windows" => Some("dsound"),
+            _ => None,
+        } {
+            cmd.arg("-audiodev").arg(format!("{},id=sound", backend));
+            cmd.arg("-machine").arg("pcspk-audiodev=sound");
+            cmd.arg("-device").arg("intel-hda");
+            cmd.arg("-device").arg("hda-output,audiodev=sound");
         }
 
         let mut child = cmd.spawn().unwrap();

@@ -1,6 +1,7 @@
 pub mod cache;
 pub mod dev;
 pub mod operation;
+pub mod proc;
 pub mod ramfs;
 pub mod vfs;
 
@@ -9,6 +10,7 @@ use core::{ffi::CStr, slice::from_raw_parts};
 use alloc::{boxed::Box, vec};
 use dev::Terminal;
 use limine::request::ModuleRequest;
+use proc::CmdLine;
 use ramfs::create_ramfs_from_cpio;
 use spin::Lazy;
 pub use vfs::*;
@@ -30,7 +32,7 @@ static INITRAMFS_MODULE: limine::modules::InternalModule = limine::modules::Inte
     .with_path(unsafe { CStr::from_bytes_with_nul_unchecked(&create_string(b"/boot/initramfs")) });
 
 #[used]
-#[link_section = ".requests"]
+#[unsafe(link_section = ".requests")]
 static INITRAMFS: ModuleRequest = ModuleRequest::new().with_internal_modules(&[&INITRAMFS_MODULE]);
 
 pub static ROOT: Lazy<FileRef> = Lazy::new(|| {
@@ -59,6 +61,17 @@ pub fn init() {
             FileType::CharDevice,
             "terminal".into(),
             Path::new("/dev/terminal"),
+        ));
+
+    ROOT.write()
+        .get_child("proc")
+        .unwrap()
+        .write()
+        .add_child(FileRef::new(
+            Inode::new(CmdLine, InodeType::File),
+            FileType::CharDevice,
+            "cmd_line".into(),
+            Path::new("/proc/cmd_line"),
         ));
 
     let font_file = ROOT.read().get_child("FiraCodeNotoSans.ttf").unwrap();

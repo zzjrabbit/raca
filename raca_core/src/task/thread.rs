@@ -32,6 +32,8 @@ pub struct Thread {
     pub kernel_stack: KernelStack,
     pub context: Context,
     pub process: WeakSharedProcess,
+    pub waiter: Option<WeakSharedThread>,
+    pub remove_after_schedule: bool,
 }
 
 impl Thread {
@@ -41,6 +43,8 @@ impl Thread {
             kernel_stack: KernelStack::new(),
             context: Context::default(),
             process,
+            waiter: None,
+            remove_after_schedule: false,
         }
     }
 
@@ -69,7 +73,7 @@ impl Thread {
         });
     }
 
-    pub fn new_user_thread(process: WeakSharedProcess, entry_point: usize) {
+    pub fn new_user_thread(process: WeakSharedProcess, entry_point: usize) -> SharedThread {
         let mut thread = Self::new(process.clone());
         let process = process.upgrade().unwrap();
         let mut process = process.write();
@@ -85,6 +89,30 @@ impl Thread {
         let thread = Arc::new(RwLock::new(Box::new(thread)));
         process.threads.push(thread.clone());
 
-        SCHEDULER.lock().add(Arc::downgrade(&thread));
+        SCHEDULER.lock().add(Arc::downgrade(&thread.clone()));
+        thread
+    }
+
+    pub fn new_user_thread_with_stack(
+        process: WeakSharedProcess,
+        entry_point: usize,
+        stack_end: x86_64::VirtAddr,
+    ) -> SharedThread {
+        let mut thread = Self::new(process.clone());
+        let process = process.upgrade().unwrap();
+        let mut process = process.write();
+
+        thread.context.init(
+            entry_point,
+            stack_end,
+            process.page_table.physical_address(),
+            Selectors::get_user_segments(),
+        );
+
+        let thread = Arc::new(RwLock::new(Box::new(thread)));
+        process.threads.push(thread.clone());
+
+        SCHEDULER.lock().add(Arc::downgrade(&thread.clone()));
+        thread
     }
 }

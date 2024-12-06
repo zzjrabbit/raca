@@ -35,19 +35,23 @@ impl ExtendedPageTable for OffsetPageTable<'_> {
 
     unsafe fn deep_copy(&self) -> OffsetPageTable<'static> {
         let virtual_address = convert_physical_to_virtual(self.physical_address());
-        let source_table = &*virtual_address.as_ptr::<PageTable>();
+        let source_table = unsafe {&*virtual_address.as_ptr::<PageTable>()};
 
         let mut frame_allocator = FRAME_ALLOCATOR.lock();
-        let mut new_page_table = new_from_allocate(&mut frame_allocator);
+        let mut new_page_table = unsafe{new_from_allocate(&mut frame_allocator)};
         let target_table = new_page_table.level_4_table_mut();
 
-        new_from_recursion(&mut frame_allocator, source_table, target_table, 4);
+        unsafe {
+            new_from_recursion(&mut frame_allocator, source_table, target_table, 4);
+        }
         new_page_table
     }
 
     unsafe fn free_user_page_table(&self) {
         let mut frame_allocator = FRAME_ALLOCATOR.lock();
-        free_from_recursion(&mut frame_allocator, self.physical_address(), 4);
+        unsafe {
+            free_from_recursion(&mut frame_allocator, self.physical_address(), 4);
+        }
     }
 }
 
@@ -59,10 +63,10 @@ unsafe fn new_from_allocate(
         .start_address();
 
     let new_page_table =
-        &mut *convert_physical_to_virtual(page_table_address).as_mut_ptr::<PageTable>();
+        unsafe{&mut *convert_physical_to_virtual(page_table_address).as_mut_ptr::<PageTable>()};
 
     let physical_memory_offset = VirtAddr::new(*PHYSICAL_MEMORY_OFFSET);
-    let page_table = OffsetPageTable::new(new_page_table, physical_memory_offset);
+    let page_table = unsafe {OffsetPageTable::new(new_page_table, physical_memory_offset)};
 
     page_table
 }
@@ -81,19 +85,21 @@ unsafe fn new_from_recursion(
             target_page_table[index].set_addr(entry.addr(), entry.flags());
             continue;
         }
-        let mut new_page_table = new_from_allocate(frame_allocator);
+        let mut new_page_table = unsafe {new_from_allocate(frame_allocator)};
         let new_page_table_address = PhysAddr::new(new_page_table.physical_address().as_u64());
         target_page_table[index].set_addr(new_page_table_address, entry.flags());
 
-        let source_page_table_next = &*convert_physical_to_virtual(entry.addr()).as_ptr();
+        let source_page_table_next = unsafe {&*convert_physical_to_virtual(entry.addr()).as_ptr()};
         let target_page_table_next = new_page_table.level_4_table_mut();
 
-        new_from_recursion(
-            frame_allocator,
-            source_page_table_next,
-            target_page_table_next,
-            page_table_level - 1,
-        );
+        unsafe {
+            new_from_recursion(
+                frame_allocator,
+                source_page_table_next,
+                target_page_table_next,
+                page_table_level - 1,
+            );
+        }
     }
 }
 
@@ -103,12 +109,14 @@ unsafe fn free_from_recursion(
     page_table_level: u8,
 ) {
     if page_table_level == 0 {
-        frame_allocator.deallocate_frame(PhysFrame::containing_address(physical_address));
+        unsafe {
+            frame_allocator.deallocate_frame(PhysFrame::containing_address(physical_address));
+        }
         return;
     }
 
     let virtual_address = convert_physical_to_virtual(physical_address);
-    let page_table = &mut *(virtual_address.as_mut_ptr::<PageTable>());
+    let page_table = unsafe{&mut *(virtual_address.as_mut_ptr::<PageTable>())};
 
     for entry in page_table.iter() {
         if entry.is_unused() {
@@ -118,13 +126,19 @@ unsafe fn free_from_recursion(
         if page_table_level == 1 || entry.flags().contains(PageTableFlags::HUGE_PAGE) {
             if entry.flags().contains(MappingType::UserCode.flags()) {
                 if let Ok(frame) = entry.frame() {
-                    frame_allocator.deallocate_frame(frame);
+                    unsafe {
+                        frame_allocator.deallocate_frame(frame);
+                    }
                 }
             }
         } else {
-            free_from_recursion(frame_allocator, entry.addr(), page_table_level - 1);
+            unsafe {
+                free_from_recursion(frame_allocator, entry.addr(), page_table_level - 1);
+            }
         }
     }
 
-    frame_allocator.deallocate_frame(PhysFrame::containing_address(physical_address));
+    unsafe {
+        frame_allocator.deallocate_frame(PhysFrame::containing_address(physical_address));
+    }
 }

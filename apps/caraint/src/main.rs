@@ -8,19 +8,19 @@ use cara::{
     frontend::{Lexer, Parser},
 };
 use raca_std::{
+    exit,
     fs::{File, OpenMode},
-    io::stdin,
     path::Path,
     print, println,
-    task::exit,
 };
 
 extern crate alloc;
 
 #[no_mangle]
 pub extern "C" fn main() -> usize {
-    let mut path = String::new();
-    stdin().read_line(&mut path);
+    //let mut path = String::new();
+    //stdin().read_line(&mut path);
+    let path = raca_std::env::args().nth(1).unwrap();
 
     let file = File::open(Path::new(path.clone()), OpenMode::Read);
 
@@ -34,7 +34,9 @@ pub extern "C" fn main() -> usize {
     file.read(&mut data);
     let code = String::from_utf8(data).unwrap();
 
-    println!("code: {}", code);
+    println!("good");
+
+    //println!("code: {}", code);
 
     /*let code = r"
     fn fib(n) {
@@ -83,5 +85,5 @@ pub extern "C" fn main() -> usize {
         }
     }
 
-    exit(0);
+    0
 }

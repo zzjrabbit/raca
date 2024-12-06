@@ -42,7 +42,13 @@ pub fn read(fd: FileDescriptor, buf: &mut [u8]) -> Result<usize> {
         .get(&fd)
     {
         match mode {
-            OpenMode::Read | OpenMode::ReadWrite => Ok(inode.read().read_at(*offset, buf)),
+            OpenMode::Read | OpenMode::ReadWrite => Ok({
+                let offset = *offset;
+                let inode = inode.clone();
+                drop(current_process);
+                let inode = inode.read();
+                inode.read_at(offset, buf).clone()
+            }),
 
             _ => Err(Error::AccessDenied),
         }
@@ -58,7 +64,13 @@ pub fn write(fd: FileDescriptor, buf: &[u8]) -> Result<usize> {
 
     if let Some((inode, mode, offset)) = current_file_descriptor_manager.file_descriptors.get(&fd) {
         match mode {
-            OpenMode::Write | OpenMode::ReadWrite => Ok(inode.read().write_at(*offset, buf)),
+            OpenMode::Write | OpenMode::ReadWrite => Ok({
+                let offset = *offset;
+                let inode = inode.clone();
+                drop(current_process);
+                let inode = inode.read();
+                inode.write_at(offset, buf).clone()
+            }),
 
             _ => Err(Error::AccessDenied),
         }
@@ -103,6 +115,10 @@ pub fn fsize(fd: FileDescriptor) -> Result<usize> {
         .file_descriptors
         .get_mut(&fd)
         .ok_or(Error::FileDescriptorNotFound)?;
+
+    let inode = inode.clone();
+
+    drop(current_process);
 
     let size = inode.read().len();
 

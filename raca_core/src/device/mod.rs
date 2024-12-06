@@ -1,3 +1,4 @@
+pub mod beeper;
 pub mod display;
 pub mod hpet;
 pub mod log;

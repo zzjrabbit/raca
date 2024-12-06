@@ -7,11 +7,12 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-use raca_std::{io::stdin, path::Path, print, println};
+use raca_std::{path::Path, print, println};
 
 extern crate alloc;
 
 mod commands;
+mod readline;
 mod run;
 
 /*
@@ -45,6 +46,11 @@ fn get_prompt(state: CmdState) -> String {
 
 type CommandFunction = fn(args: Vec<String>);
 
+fn test() {
+    println!("test");
+    loop {}
+}
+
 #[no_mangle]
 pub fn main() -> usize {
     let mut command_function_list = BTreeMap::<&str, CommandFunction>::new();
@@ -56,10 +62,14 @@ pub fn main() -> usize {
         command_function_list.insert("echo", echo);
         command_function_list.insert("insmod", insmod);
         command_function_list.insert("exit", exit);
+        command_function_list.insert("poweroff", poweroff);
+        command_function_list.insert("reboot", reboot);
         //command_function_list.insert("ls", ls);
         //command_function_list.insert("mount", mount);
         //command_function_list.insert("write", write);
     }
+
+    let mut readline = readline::Readline::new();
 
     println!(
         "\n\x1b[34mRACA-Shell \x1b[31mv{}",
@@ -67,14 +77,19 @@ pub fn main() -> usize {
     );
     println!("\n\x1b[33mRemember to keep happy all the day when you open this shell! :)\n");
 
+    println!("args: {:?}", raca_std::env::args().collect::<Vec<_>>());
+
     let mut state = CmdState::Ok;
 
     print!("{}", get_prompt(state));
 
+    raca_std::thread::spawn(test).unwrap();
+
     loop {
         let mut input_buf = String::new();
 
-        stdin().read_line(&mut input_buf);
+        //stdin().read_line(&mut input_buf);
+        readline.read_line(&mut input_buf);
 
         let input =
             String::from_utf8(escape_bytes::unescape(input_buf.as_bytes()).unwrap()).unwrap();
@@ -90,7 +105,7 @@ pub fn main() -> usize {
 
         if let Some(function) = function {
             function(args_);
-        } else if let Some(state_) = run::try_run(Path::new(args[0].clone())) {
+        } else if let Some(state_) = run::try_run(args.clone()) {
             state = state_;
         } else {
             if input_buf.len() > 0 {

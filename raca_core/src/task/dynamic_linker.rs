@@ -3,10 +3,10 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-use goblin::elf::{header::EM_SE_C17, Elf};
+use goblin::elf::Elf;
 use spin::Mutex;
 use x86_64::{
-    structures::paging::{page_table, OffsetPageTable, PhysFrame},
+    structures::paging::OffsetPageTable,
     VirtAddr,
 };
 
