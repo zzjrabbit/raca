@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::{result_from_isize, Result};
+use crate::{Result, result_from_isize};
 
 #[naked]
 extern "C" fn syscall_(

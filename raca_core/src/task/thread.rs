@@ -5,7 +5,7 @@ use crate::{
     memory::{ExtendedPageTable, KERNEL_PAGE_TABLE},
 };
 
-use super::{context::Context, process::KERNEL_PROCESS, stack::UserStack, SCHEDULER};
+use super::{SCHEDULER, context::Context, process::KERNEL_PROCESS, stack::UserStack};
 use super::{process::WeakSharedProcess, stack::KernelStack};
 use alloc::{
     boxed::Box,

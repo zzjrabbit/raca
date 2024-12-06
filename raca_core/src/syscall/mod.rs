@@ -1,12 +1,12 @@
 use core::arch::naked_asm;
 
 use x86_64::{
+    VirtAddr,
     registers::{
         control::{Efer, EferFlags},
         model_specific::{LStar, SFMask, Star},
         rflags::RFlags,
     },
-    VirtAddr,
 };
 
 use crate::{arch::gdt::Selectors, error::Error};

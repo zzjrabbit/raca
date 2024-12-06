@@ -13,7 +13,7 @@ mod page_table;
 
 pub use dma::DmaManager;
 pub use frame::BitmapFrameAllocator;
-pub use kernel_heap::{init_heap, HEAP_END};
+pub use kernel_heap::{HEAP_END, init_heap};
 pub use manager::{MappingType, MemoryManager};
 pub use page_table::*;
 
@@ -52,7 +52,5 @@ pub unsafe fn ref_current_page_table() -> OffsetPageTable<'static> {
     let physical_address = Cr3::read().0.start_address();
     let page_table = convert_physical_to_virtual(physical_address).as_mut_ptr::<PageTable>();
     let physical_memory_offset = VirtAddr::new(*PHYSICAL_MEMORY_OFFSET);
-    unsafe {
-        OffsetPageTable::new(&mut *page_table, physical_memory_offset)
-    }
+    unsafe { OffsetPageTable::new(&mut *page_table, physical_memory_offset) }
 }

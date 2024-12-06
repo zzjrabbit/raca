@@ -1,6 +1,6 @@
 use core::{alloc::Layout, mem::transmute, ptr::NonNull};
 
-use crate::memory::{ExtendedPageTable, MappingType, MemoryManager, HEAP_END, KERNEL_PAGE_TABLE};
+use crate::memory::{ExtendedPageTable, HEAP_END, KERNEL_PAGE_TABLE, MappingType, MemoryManager};
 use alloc::{
     collections::btree_map::BTreeMap,
     string::{String, ToString},

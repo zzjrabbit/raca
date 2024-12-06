@@ -4,7 +4,7 @@ use core::time::Duration;
 use alloc::{boxed::Box, sync::Arc};
 use spin::RwLock;
 
-use crate::task::{signal::Signal, Process, Thread, SCHEDULER};
+use crate::task::{Process, SCHEDULER, Thread, signal::Signal};
 
 use crate::error::*;
 
@@ -115,7 +115,7 @@ pub fn start_wait_for_signal(ty: usize) -> Result<usize> {
         thread.write().remove_after_schedule = true;
         SCHEDULER.lock().remove(Arc::downgrade(thread));
     }
-    
+
     unsafe {
         core::arch::asm!("int 0x20");
     }
@@ -151,13 +151,10 @@ pub fn exit(code: usize) -> Result<usize> {
             let father = father.upgrade().unwrap();
             let mut father = father.write();
 
-            if father.signal_manager.register_signal(
-                1,
-                Signal {
-                    ty: 1,
-                    data: [code as u64, 0, 0, 0, 0, 0, 0, 0],
-                },
-            ) {
+            if father.signal_manager.register_signal(1, Signal {
+                ty: 1,
+                data: [code as u64, 0, 0, 0, 0, 0, 0, 0],
+            }) {
                 for thread in father.threads.iter() {
                     SCHEDULER.lock().add(Arc::downgrade(thread));
                 }
@@ -175,7 +172,7 @@ pub fn yield_thread() -> Result<usize> {
     unsafe {
         core::arch::asm!("int 0x20");
     }
-    
+
     Ok(0)
 }
 
@@ -183,10 +180,14 @@ pub fn sleep(ms: usize) -> Result<usize> {
     crate::task::timer::TIMER
         .lock()
         .add(Duration::from_micros(ms as u64));
-    
+
     let scheduler = SCHEDULER.lock();
     let current_thread_weak = scheduler.current_thread();
-    current_thread_weak.upgrade().unwrap().write().remove_after_schedule = true;
+    current_thread_weak
+        .upgrade()
+        .unwrap()
+        .write()
+        .remove_after_schedule = true;
     drop(scheduler);
     unsafe {
         core::arch::asm!("int 0x20");

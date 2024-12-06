@@ -1,8 +1,8 @@
 use limine::memory_map::EntryType;
 use limine::response::MemoryMapResponse;
+use x86_64::PhysAddr;
 use x86_64::structures::paging::{FrameAllocator, PhysFrame};
 use x86_64::structures::paging::{FrameDeallocator, Size4KiB};
-use x86_64::PhysAddr;
 
 use super::bitmap::Bitmap;
 use super::convert_physical_to_virtual;

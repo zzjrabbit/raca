@@ -6,7 +6,7 @@ use crate::{
     task::{Process, SCHEDULER},
 };
 
-use super::{get_file_by_path, FileDescriptor, OpenMode};
+use super::{FileDescriptor, OpenMode, get_file_by_path};
 use crate::error::*;
 
 fn get_current_process() -> Arc<RwLock<Box<Process>>> {

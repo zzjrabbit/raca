@@ -3,7 +3,7 @@ use core::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use spin::{Lazy, Mutex};
 use x2apic::ioapic::{IoApic, IrqMode, RedirectionTableEntry};
 use x2apic::lapic::{LocalApic, LocalApicBuilder, TimerMode};
-use x86_64::{instructions::port::Port, PhysAddr};
+use x86_64::{PhysAddr, instructions::port::Port};
 
 use super::acpi::ACPI;
 use super::interrupts::InterruptIndex;
@@ -84,7 +84,7 @@ pub unsafe fn ioapic_add_entry(irq: u8, vector: u8) {
     let mut ioapic = IOAPIC.lock();
     let mut entry = RedirectionTableEntry::default();
     entry.set_mode(IrqMode::Fixed);
-    entry.set_dest(unsafe {lapic.id()} as u8);
+    entry.set_dest(unsafe { lapic.id() } as u8);
     entry.set_vector(vector);
     unsafe {
         ioapic.set_table_entry(irq, entry);
@@ -102,7 +102,7 @@ pub unsafe fn calibrate_timer() {
             lapic.set_timer_initial(!0);
         }
         while HPET.elapsed().as_nanos() - last_time < 1_000_000 {}
-        lapic_total_ticks += !0 - unsafe {lapic.timer_current()};
+        lapic_total_ticks += !0 - unsafe { lapic.timer_current() };
     }
 
     let average_clock_per_ms = lapic_total_ticks / TIMER_CALIBRATION_ITERATION;

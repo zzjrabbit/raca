@@ -20,7 +20,7 @@ impl Timer {
 
     pub fn add(&mut self, duration: Duration) {
         let target_tick = HPET.estimate(duration);
-        
+
         let mut scheduler = SCHEDULER.lock();
 
         let thread = scheduler.current_thread();

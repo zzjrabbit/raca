@@ -5,10 +5,7 @@ use alloc::{
 };
 use goblin::elf::Elf;
 use spin::Mutex;
-use x86_64::{
-    structures::paging::OffsetPageTable,
-    VirtAddr,
-};
+use x86_64::{VirtAddr, structures::paging::OffsetPageTable};
 
 use crate::memory::{ExtendedPageTable, MappingType, MemoryManager};
 

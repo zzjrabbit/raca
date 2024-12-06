@@ -72,7 +72,8 @@ impl Scheduler {
         if let Some(next_thread) = self.ready_threads.pop_front() {
             self.current_threads.insert(lapic_id, next_thread);
             if let Some(last_thread) = last_thread {
-                let is_going_to_remove = last_thread.upgrade().unwrap().read().remove_after_schedule;
+                let is_going_to_remove =
+                    last_thread.upgrade().unwrap().read().remove_after_schedule;
                 last_thread.upgrade().unwrap().write().remove_after_schedule = false;
                 if !is_going_to_remove {
                     self.ready_threads.push_back(last_thread);

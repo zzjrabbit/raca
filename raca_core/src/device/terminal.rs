@@ -1,7 +1,7 @@
 use alloc::boxed::Box;
 use core::fmt::{self, Write};
-use os_terminal::font::BitmapFont;
 use os_terminal::Terminal;
+use os_terminal::font::BitmapFont;
 use spin::{Lazy, Mutex};
 use x86_64::instructions::interrupts;
 

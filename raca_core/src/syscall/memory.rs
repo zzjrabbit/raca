@@ -1,7 +1,7 @@
 use x86_64::VirtAddr;
 
 use crate::error::*;
-use crate::memory::{ref_current_page_table, MappingType, MemoryManager};
+use crate::memory::{MappingType, MemoryManager, ref_current_page_table};
 
 pub fn malloc(address: usize, length: usize) -> Result<usize> {
     if length == 0 {

@@ -1,10 +1,10 @@
 use alloc::collections::btree_map::BTreeMap;
 use spin::Lazy;
+use x86_64::VirtAddr;
 use x86_64::registers::control::Cr2;
 use x86_64::structures::idt::InterruptDescriptorTable;
 use x86_64::structures::idt::InterruptStackFrame;
 use x86_64::structures::idt::PageFaultErrorCode;
-use x86_64::VirtAddr;
 
 use super::gdt::DOUBLE_FAULT_IST_INDEX;
 use crate::arch::apic::LAPIC;

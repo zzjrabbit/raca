@@ -4,7 +4,7 @@ use alloc::sync::Arc;
 use spin::RwLock;
 use syscall_macro::syscall;
 
-use crate::{path::Path, Result};
+use crate::{Result, path::Path};
 
 #[repr(u8)]
 pub enum OpenMode {

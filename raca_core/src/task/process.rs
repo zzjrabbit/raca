@@ -9,20 +9,20 @@ use alloc::{
 };
 use object::{File, Object, ObjectSegment};
 use spin::{Lazy, RwLock};
-use x86_64::{instructions::interrupts, structures::paging::OffsetPageTable, VirtAddr};
+use x86_64::{VirtAddr, instructions::interrupts, structures::paging::OffsetPageTable};
 
 use crate::{
     fs::{
-        operation::{FileDescriptorManager, OpenMode},
         FileRef,
+        operation::{FileDescriptorManager, OpenMode},
     },
-    memory::{ExtendedPageTable, MappingType, MemoryManager, KERNEL_PAGE_TABLE},
+    memory::{ExtendedPageTable, KERNEL_PAGE_TABLE, MappingType, MemoryManager},
 };
 
 use super::{
+    SCHEDULER,
     signal::SignalManager,
     thread::{SharedThread, Thread},
-    SCHEDULER,
 };
 
 const KERNEL_PROCESS_NAME: &str = "kernel";

@@ -3,8 +3,8 @@ use core::slice::{from_raw_parts, from_raw_parts_mut};
 use alloc::string::String;
 
 use crate::fs::{
-    operation::{self, OpenMode},
     Path,
+    operation::{self, OpenMode},
 };
 
 use crate::error::*;

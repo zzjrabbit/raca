@@ -1,13 +1,13 @@
-use x86_64::structures::paging::mapper::*;
 use x86_64::structures::paging::FrameAllocator;
 use x86_64::structures::paging::FrameDeallocator;
 use x86_64::structures::paging::PhysFrame;
+use x86_64::structures::paging::mapper::*;
 use x86_64::structures::paging::{PageTable, PageTableFlags};
 use x86_64::{PhysAddr, VirtAddr};
 
-use super::MappingType;
 use super::FRAME_ALLOCATOR;
-use super::{convert_physical_to_virtual, BitmapFrameAllocator, PHYSICAL_MEMORY_OFFSET};
+use super::MappingType;
+use super::{BitmapFrameAllocator, PHYSICAL_MEMORY_OFFSET, convert_physical_to_virtual};
 
 pub trait ExtendedPageTable {
     fn physical_address(&self) -> PhysAddr;
@@ -35,10 +35,10 @@ impl ExtendedPageTable for OffsetPageTable<'_> {
 
     unsafe fn deep_copy(&self) -> OffsetPageTable<'static> {
         let virtual_address = convert_physical_to_virtual(self.physical_address());
-        let source_table = unsafe {&*virtual_address.as_ptr::<PageTable>()};
+        let source_table = unsafe { &*virtual_address.as_ptr::<PageTable>() };
 
         let mut frame_allocator = FRAME_ALLOCATOR.lock();
-        let mut new_page_table = unsafe{new_from_allocate(&mut frame_allocator)};
+        let mut new_page_table = unsafe { new_from_allocate(&mut frame_allocator) };
         let target_table = new_page_table.level_4_table_mut();
 
         unsafe {
@@ -63,10 +63,10 @@ unsafe fn new_from_allocate(
         .start_address();
 
     let new_page_table =
-        unsafe{&mut *convert_physical_to_virtual(page_table_address).as_mut_ptr::<PageTable>()};
+        unsafe { &mut *convert_physical_to_virtual(page_table_address).as_mut_ptr::<PageTable>() };
 
     let physical_memory_offset = VirtAddr::new(*PHYSICAL_MEMORY_OFFSET);
-    let page_table = unsafe {OffsetPageTable::new(new_page_table, physical_memory_offset)};
+    let page_table = unsafe { OffsetPageTable::new(new_page_table, physical_memory_offset) };
 
     page_table
 }
@@ -85,11 +85,12 @@ unsafe fn new_from_recursion(
             target_page_table[index].set_addr(entry.addr(), entry.flags());
             continue;
         }
-        let mut new_page_table = unsafe {new_from_allocate(frame_allocator)};
+        let mut new_page_table = unsafe { new_from_allocate(frame_allocator) };
         let new_page_table_address = PhysAddr::new(new_page_table.physical_address().as_u64());
         target_page_table[index].set_addr(new_page_table_address, entry.flags());
 
-        let source_page_table_next = unsafe {&*convert_physical_to_virtual(entry.addr()).as_ptr()};
+        let source_page_table_next =
+            unsafe { &*convert_physical_to_virtual(entry.addr()).as_ptr() };
         let target_page_table_next = new_page_table.level_4_table_mut();
 
         unsafe {
@@ -116,7 +117,7 @@ unsafe fn free_from_recursion(
     }
 
     let virtual_address = convert_physical_to_virtual(physical_address);
-    let page_table = unsafe{&mut *(virtual_address.as_mut_ptr::<PageTable>())};
+    let page_table = unsafe { &mut *(virtual_address.as_mut_ptr::<PageTable>()) };
 
     for entry in page_table.iter() {
         if entry.is_unused() {

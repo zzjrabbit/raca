@@ -7,7 +7,7 @@ use alloc::vec;
 use core::panic::PanicInfo;
 use limine::BaseRevision;
 use raca_core::{
-    fs::{operation::kernel_open, Path, ROOT},
+    fs::{Path, ROOT, operation::kernel_open},
     task::Process,
 };
 
