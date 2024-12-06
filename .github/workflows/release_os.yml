@@ -2,10 +2,8 @@ name: Create Release
   
 on:
   push:
-    branches: [ "edition16" ]
-    paths-ignore:
-      - 'README.md'
-      - '.gitignore'
+    tags:
+      - 'v*'
   
 jobs:  
   build:  
@@ -24,7 +22,7 @@ jobs:
         env:  
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
         with:  
-          tag_name: release  
+          tag_name: ${{ github.ref }}  
           release_name: Release ${{ github.ref }}  
           draft: false  
           prerelease: false  
