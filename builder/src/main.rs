@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-use std::env::args;
 use std::fs::File;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
@@ -58,7 +57,7 @@ fn build_module(name: &str, images_path: PathBuf, module_name: Option<String>) {
     io::copy(&mut module_src, &mut module_dest).unwrap();
 }
 
-fn build_user_program(name: &str, images_path: PathBuf, user_program_name: Option<String>) {
+fn build_user_program(name: &str) {
     let mut cmd = Command::new("cargo");
     cmd.current_dir("apps");
     cmd.arg("build");
@@ -68,17 +67,6 @@ fn build_user_program(name: &str, images_path: PathBuf, user_program_name: Optio
 
     let mut child = cmd.spawn().unwrap();
     child.wait().unwrap();
-
-    let module_path = PathBuf::from("target/x86_64-unknown-none/release/".to_string() + name);
-    let mut module_src = File::open(module_path).unwrap();
-    let name = if let Some(name) = user_program_name {
-        name
-    } else {
-        name.to_string()
-    };
-    let mut module_dest = File::create(images_path.join("bin").join(name + ".rae")).unwrap();
-
-    io::copy(&mut module_src, &mut module_dest).unwrap();
 }
 
 fn build_initramfs() {
@@ -179,13 +167,43 @@ fn main() {
 
     for user_program in initramfs_config.get("users").unwrap().as_array().unwrap() {
         let name = user_program.as_str().unwrap();
-        build_user_program(name, initramfs_path.clone(), None);
+        build_user_program(name);
+    }
+
+    for entry in walkdir::WalkDir::new("target/x86_64-unknown-none/release").max_depth(1) {
+        if let Ok(entry) = entry {
+            if entry.file_type().is_file() {
+                let file_name = entry.file_name().to_str().unwrap();
+                if !file_name.starts_with(".") && !file_name.ends_with(".d") {
+                    println!("found user program: `{}`", file_name);
+                    let user_program_path = PathBuf::from(
+                        "target/x86_64-unknown-none/release/".to_string() + file_name,
+                    );
+                    let mut user_program_src = File::open(user_program_path).unwrap();
+
+                    let mut user_program_dest = File::create(
+                        initramfs_path
+                            .join("bin")
+                            .join(file_name.to_string() + ".rae"),
+                    )
+                    .unwrap();
+
+                    io::copy(&mut user_program_src, &mut user_program_dest).unwrap();
+                }
+            }
+        }
     }
 
     let init_name = initramfs_config.get("init").unwrap().as_str().unwrap();
-    build_user_program(init_name, initramfs_path, Some("init".into()));
+    build_user_program(init_name);
 
-    //build_image_from_dir("initrd", "esp/initrd");
+    let user_program_path =
+        PathBuf::from("target/x86_64-unknown-none/release/".to_string() + init_name);
+    let mut user_program_src = File::open(user_program_path).unwrap();
+    let mut user_program_dest = File::create(initramfs_path.join("bin").join("init.rae")).unwrap();
+
+    io::copy(&mut user_program_src, &mut user_program_dest).unwrap();
+
     build_initramfs();
 
     println!("initramfs built!");

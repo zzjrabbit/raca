@@ -24,6 +24,7 @@ pub enum SyscallIndex {
     CreateThread = 17,
     YieldProcess = 18,
     Sleep = 19,
+    SetEnv = 20,
 }
 
 impl From<usize> for SyscallIndex {

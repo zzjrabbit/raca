@@ -13,22 +13,22 @@ pub struct Context {
     r12: usize,
     r11: usize,
     r10: usize,
-    r9: usize,
+    pub r9: usize,
 
-    r8: usize,
+    pub r8: usize,
     rbp: usize,
-    rsi: usize,
-    rdi: usize,
+    pub rsi: usize,
+    pub rdi: usize,
 
-    rdx: usize,
-    rcx: usize,
+    pub rdx: usize,
+    pub rcx: usize,
     rbx: usize,
     rax: usize,
 
     rip: usize,
     cs: usize,
     rflags: usize,
-    rsp: usize,
+    pub rsp: usize,
     ss: usize,
 }
 
@@ -44,6 +44,8 @@ impl Context {
         self.rip = entry_point;
         self.rsp = stack_end_address.as_u64() as usize;
         self.cr3 = page_table_address.as_u64() as usize;
+        self.rdi = self.rsp;
+        self.rdx = self.rsp;
 
         let (code_selector, data_selector) = segment_selectors;
         self.cs = code_selector.0 as usize;

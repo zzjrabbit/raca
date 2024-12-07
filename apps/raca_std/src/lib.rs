@@ -38,7 +38,16 @@ pub fn dummy() {
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "sysv64" fn _start() -> ! {
+pub unsafe extern "sysv64" fn _start(
+    argv: usize,
+    argc: usize,
+    env_start: usize,
+    env_len: usize,
+) -> ! {
+    env::ENV_INFO.lock().env_start = env_start;
+    env::ENV_INFO.lock().env_len = env_len;
+    env::ARG_INFO.lock().argc = argc;
+    env::ARG_INFO.lock().argv = argv;
     exit(main());
 }
 

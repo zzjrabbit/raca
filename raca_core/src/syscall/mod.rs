@@ -115,6 +115,7 @@ pub extern "C" fn syscall_handler(
         SyscallIndex::CreateThread => create_thread(arg1, arg2 as u64),
         SyscallIndex::YieldProcess => yield_thread(),
         SyscallIndex::Sleep => sleep(arg1),
+        SyscallIndex::SetEnv => set_env(arg1, arg2),
     };
 
     match ret {

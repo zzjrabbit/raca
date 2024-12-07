@@ -10,7 +10,6 @@ use core::{ffi::CStr, slice::from_raw_parts};
 use alloc::{boxed::Box, vec};
 use dev::Terminal;
 use limine::request::ModuleRequest;
-use proc::CmdLine;
 use ramfs::create_ramfs_from_cpio;
 use spin::Lazy;
 pub use vfs::*;
@@ -61,17 +60,6 @@ pub fn init() {
             FileType::CharDevice,
             "terminal".into(),
             Path::new("/dev/terminal"),
-        ));
-
-    ROOT.write()
-        .get_child("proc")
-        .unwrap()
-        .write()
-        .add_child(FileRef::new(
-            Inode::new(CmdLine, InodeType::File),
-            FileType::CharDevice,
-            "cmd_line".into(),
-            Path::new("/proc/cmd_line"),
         ));
 
     let font_file = ROOT.read().get_child("FiraCodeNotoSans.ttf").unwrap();

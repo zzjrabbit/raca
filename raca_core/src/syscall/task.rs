@@ -3,7 +3,9 @@ use core::time::Duration;
 
 use alloc::{boxed::Box, sync::Arc};
 use spin::RwLock;
+use x86_64::VirtAddr;
 
+use crate::memory::ExtendedPageTable;
 use crate::task::{Process, SCHEDULER, Thread, signal::Signal};
 
 use crate::error::*;
@@ -92,8 +94,36 @@ pub fn create_process(info_addr: usize) -> Result<usize> {
     let process = Process::new_user_process(name.unwrap(), buf, stdin_file, stdout_file)?;
     let pid = process.read().id;
 
+    let main_thread_stack = process.read().threads[0].read().context.rsp;
+
+    let args_start = main_thread_stack - cmd_line.len();
+
+    process
+        .write()
+        .page_table
+        .write_to_mapped_address(&cmd_line, VirtAddr::new(args_start as u64));
+
+    let argc = cmd_line.iter().filter(|x| **x == 0).count();
+
+    let (father_env_start, father_env_len) = current_process.read().env_info;
+    let env_data =
+        unsafe { from_raw_parts(father_env_start as *const u8, father_env_len as usize) };
+
+    let env_start = args_start - env_data.len();
+
+    process
+        .write()
+        .page_table
+        .write_to_mapped_address(env_data, VirtAddr::new(env_start as u64));
+
+    process.read().threads[0].write().context.rsp = env_start;
+    process.read().threads[0].write().context.rdi = args_start;
+    process.read().threads[0].write().context.rsi = argc;
+    process.read().threads[0].write().context.rdx = env_start;
+    process.read().threads[0].write().context.rcx = env_data.len();
+
+    process.write().env_info = (env_start, env_data.len());
     process.write().father = Some(Arc::downgrade(&get_current_process()));
-    process.write().cmd_line = cmd_line;
 
     Ok(pid.0 as usize)
 }
@@ -181,16 +211,20 @@ pub fn sleep(ms: usize) -> Result<usize> {
         .lock()
         .add(Duration::from_micros(ms as u64));
 
-    let scheduler = SCHEDULER.lock();
-    let current_thread_weak = scheduler.current_thread();
-    current_thread_weak
-        .upgrade()
-        .unwrap()
-        .write()
-        .remove_after_schedule = true;
-    drop(scheduler);
+    if let Some(thread) = SCHEDULER.lock().current_thread().upgrade() {
+        thread.write().remove_after_schedule = true;
+    }
+
     unsafe {
         core::arch::asm!("int 0x20");
     }
+    Ok(0)
+}
+
+pub fn set_env(addr: usize, len: usize) -> Result<usize> {
+    let process = get_current_process();
+
+    process.write().env_info = (addr, len);
+
     Ok(0)
 }

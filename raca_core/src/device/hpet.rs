@@ -54,8 +54,8 @@ impl Hpet {
 }
 
 fn hpet_handler(_frame: x86_64::structures::idt::InterruptStackFrame) {
-    crate::task::timer::TIMER.lock().wakeup();
     crate::arch::apic::end_of_interrupt();
+    crate::task::timer::TIMER.lock().wakeup();
 }
 
 pub fn init() {

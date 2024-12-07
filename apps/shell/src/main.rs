@@ -77,7 +77,11 @@ pub fn main() -> usize {
     );
     println!("\n\x1b[33mRemember to keep happy all the day when you open this shell! :)\n");
 
-    println!("args: {:?}", raca_std::env::args().collect::<Vec<_>>());
+    println!(
+        "args: {:?}\npath: {:?}",
+        raca_std::env::args().collect::<Vec<_>>(),
+        raca_std::env::var("PATH".into())
+    );
 
     let mut state = CmdState::Ok;
 
