@@ -1,6 +1,6 @@
 [package]
 name = "raca_std"
-version = "0.1.0"
+version = "16.0.0"
 edition = "2024"
 description = "Rust standard library for racaOS"
 repository = "https://github.com/zzjrabbit/racaOS"
