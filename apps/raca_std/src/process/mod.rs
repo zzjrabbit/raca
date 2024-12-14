@@ -38,14 +38,32 @@ impl Command {
         }
 
         let mut binary_file = crate::fs::File::open(self.path.clone(), crate::fs::OpenMode::Read)
-            .map_err(|_| "failed to open file".to_string())?;
+            .or_else(|_| {
+                let Some(binary_paths) = crate::env::var("PATH") else {
+                    return Err("failed to open file".to_string());
+                };
+                for binary_path in binary_paths.split(':') {
+                    let Ok(file) = crate::fs::File::open(
+                        Path::new(binary_path.to_string()).join(self.path.clone()),
+                        crate::fs::OpenMode::Read,
+                    ) else {
+                        continue;
+                    };
+                    return Ok(file);
+                }
+                return Err("failed to open file".to_string());
+            })?;
         let mut binary_buf = vec![0; binary_file.size().unwrap() as usize];
         binary_file
             .read(&mut binary_buf)
             .map_err(|_| "failed to read file".to_string())?;
         binary_file.close();
 
-        let process = crate::task::Process::new(&binary_buf, "temp", 0, 0, &cmd_line);
+        let env = crate::env::ENV_INFO.lock().get_bytes();
+        let (env_addr, env_len) = (env.as_ptr() as usize, env.len());
+
+        let process =
+            crate::task::Process::new(&binary_buf, "temp", 0, 0, &cmd_line, env_addr, env_len);
         process.run().map_err(|_| "failed to run process".into())
     }
 }

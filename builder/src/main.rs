@@ -184,7 +184,7 @@ fn main() {
                     let mut user_program_dest = File::create(
                         initramfs_path
                             .join("bin")
-                            .join(file_name.to_string() + ".rae"),
+                            .join(file_name),
                     )
                     .unwrap();
 
@@ -200,7 +200,7 @@ fn main() {
     let user_program_path =
         PathBuf::from("target/x86_64-unknown-none/release/".to_string() + init_name);
     let mut user_program_src = File::open(user_program_path).unwrap();
-    let mut user_program_dest = File::create(initramfs_path.join("bin").join("init.rae")).unwrap();
+    let mut user_program_dest = File::create(initramfs_path.join("bin").join("init")).unwrap();
 
     io::copy(&mut user_program_src, &mut user_program_dest).unwrap();
 

@@ -79,6 +79,7 @@ pub fn init() {
 }
 
 #[allow(unused_variables)]
+#[allow(improper_ctypes_definitions)]
 pub extern "C" fn syscall_handler(
     syscall_number_raw: usize,
     arg1: usize,
@@ -86,15 +87,13 @@ pub extern "C" fn syscall_handler(
     arg3: usize,
     arg4: usize,
     arg5: usize,
-) -> isize {
-    //log::info!("number : {}", syscall_number_raw);
-
+) -> crate::error::Result<usize> {
     let sys_type = match SyscallIndex::try_from(syscall_number_raw) {
         Ok(index) => index,
-        Err(_) => return Error::InvalidSyscall as isize,
+        Err(_) => return Err(Error::InvalidSyscall),
     };
 
-    let ret = match sys_type {
+    match sys_type {
         SyscallIndex::Debug => debug(arg1, arg2),
         SyscallIndex::Open => open(arg1, arg2, arg3),
         SyscallIndex::Malloc => malloc(arg1, arg2),
@@ -115,11 +114,5 @@ pub extern "C" fn syscall_handler(
         SyscallIndex::CreateThread => create_thread(arg1, arg2 as u64),
         SyscallIndex::YieldProcess => yield_thread(),
         SyscallIndex::Sleep => sleep(arg1),
-        SyscallIndex::SetEnv => set_env(arg1, arg2),
-    };
-
-    match ret {
-        Ok(num) => num as isize,
-        Err(err) => err as isize,
     }
 }

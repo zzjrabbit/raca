@@ -20,7 +20,7 @@ pub extern "C" fn main() -> ! {
     raca_core::init();
 
     let bin_folder = ROOT.read().get_child("bin").unwrap();
-    let init_file = bin_folder.read().get_child("init.rae").unwrap();
+    let init_file = bin_folder.read().get_child("init").unwrap();
 
     let mut data = vec![0; init_file.read().len()];
 

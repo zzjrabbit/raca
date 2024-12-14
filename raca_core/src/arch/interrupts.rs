@@ -199,6 +199,7 @@ extern "x86-interrupt" fn double_fault(frame: InterruptStackFrame, error_code: u
 
 extern "x86-interrupt" fn page_fault(frame: InterruptStackFrame, error_code: PageFaultErrorCode) {
     log::warn!("Processor: {}", unsafe { LAPIC.lock().id() });
+    log::warn!("Process: {}", SCHEDULER.lock().current_thread().upgrade().unwrap().read().process.upgrade().unwrap().read().id.0);
     log::warn!("Exception: Page Fault\n{:#?}", frame);
     log::warn!("Error Code: {:#?}", error_code);
     match Cr2::read() {

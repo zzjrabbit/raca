@@ -1,6 +1,6 @@
 use core::iter::FusedIterator;
 
-use alloc::{collections::btree_map::BTreeMap, string::String, vec::Vec};
+use alloc::{string::String, vec::Vec};
 use spin::Mutex;
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -9,56 +9,66 @@ pub(crate) struct ArgInfo {
     pub argv: usize,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct EnvInfo {
-    pub env_start: usize,
-    pub env_len: usize,
+    pub key_value: Vec<(String, String)>,
 }
 
-pub fn var(name: String) -> Option<String> {
-    let EnvInfo { env_start, env_len } = *ENV_INFO.lock();
-
-    let mut index = 0;
-    let mut string = Vec::new();
-    while index < env_len {
-        let byte = unsafe { (env_start as *const u8).add(index).read() };
-        index += 1;
-        if byte == 0 {
-            let mut string = String::from_utf8(string.clone()).unwrap();
-            if string.starts_with(&(name.clone() + "=")) {
-                return Some(string.split_off(name.len() + 1));
-            }
+impl EnvInfo {
+    pub fn get_bytes(&self) -> Vec<u8> {
+        let mut data = Vec::new();
+        for (key, value) in &self.key_value {
+            data.append(&mut key.clone().into_bytes());
+            data.push(b'=');
+            data.append(&mut value.clone().into_bytes());
+            data.push(0);
         }
-        string.push(byte);
+        data
     }
-
-    None
+    
+    pub fn copy_from_slice(&mut self,data: &[u8]) {
+        let mut index = 0;
+        while index < data.len() {
+            let key = {
+                let mut key_data = Vec::new();
+                while data[index] != b'=' {
+                    key_data.push(data[index]);
+                    index += 1;
+                }
+                String::from_utf8(key_data).unwrap()
+            };
+            index += 1;
+            let value = {
+                let mut value_data = Vec::new();
+                while data[index] != 0 {
+                    value_data.push(data[index]);
+                    index += 1;
+                }
+                String::from_utf8(value_data).unwrap()
+            };
+            index += value.len() + 1;
+            self.key_value.push((key, value));
+        }
+    }
 }
 
-pub fn set_env(env: BTreeMap<String, String>) {
-    let mut env_data = Vec::new();
-    for (key, value) in env {
-        env_data.append(&mut key.into_bytes());
-        env_data.push(b'=');
-        env_data.append(&mut value.into_bytes());
-        env_data.push(0);
+pub fn var<T: Into<String>>(name: T) -> Option<String> {
+    let name = name.into();
+    ENV_INFO.lock().key_value.iter().find(|x| x.0.eq(&name)).cloned().map(|x| x.1)
+}
+
+pub fn set_var<K: Into<String>, V: Into<String>>(name: K, value: V) {
+    let name = name.into();
+    if let Some(index) = ENV_INFO.lock().key_value.iter().position(|x| x.0.eq(&name)) {
+        ENV_INFO.lock().key_value[index] = (name, value.into());
+    } else {
+        ENV_INFO.lock().key_value.push((name, value.into()));
     }
-
-    let env_data = env_data.leak();
-    let env_start = env_data.as_ptr() as usize;
-    let env_len = env_data.len();
-
-    const SET_ENV_SYSCALL: u64 = 20;
-
-    syscall_macro::syscall!(SET_ENV_SYSCALL, env_start, env_len, 0, 0, 0).unwrap();
-
-    *ENV_INFO.lock() = EnvInfo { env_start, env_len };
 }
 
 pub(crate) static ARG_INFO: Mutex<ArgInfo> = Mutex::new(ArgInfo { argc: 0, argv: 0 });
 pub(crate) static ENV_INFO: Mutex<EnvInfo> = Mutex::new(EnvInfo {
-    env_start: 0,
-    env_len: 0,
+    key_value: Vec::new(),
 });
 
 pub fn args() -> Args {

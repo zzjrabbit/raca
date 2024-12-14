@@ -5,8 +5,10 @@ use talc::{OomHandler, Span, Talc, Talck};
 
 pub fn malloc(address: usize, len: usize) {
     const MALLOC_SYSCALL_ID: u64 = 2;
+    
+    syscall!(MALLOC_SYSCALL_ID, fn malloc(address: usize, len: usize));
 
-    let _ = syscall!(MALLOC_SYSCALL_ID, address, len);
+    malloc(address, len);
 }
 
 const HEAP_START: usize = 0x19198100000;

@@ -13,15 +13,19 @@ pub fn spawn(f: fn()) -> Result<()> {
     let stack_end = stack.leak().as_ptr() as usize + STACK_SIZE;
 
     const CREATE_THREAD_SYSCALL: u64 = 17;
-    syscall!(CREATE_THREAD_SYSCALL, entry as usize, stack_end).map(|_| ())
+    
+    syscall!(CREATE_THREAD_SYSCALL, fn create_thread(entry: usize, stack_end: usize) -> Result<()>);
+    
+    create_thread(entry, stack_end)
 }
 
-pub fn yield_now() {
-    const YIELD_SYSCALL: u64 = 18;
-    let _ = syscall_macro::syscall!(YIELD_SYSCALL, 0, 0, 0, 0, 0);
-}
+const YIELD_SYSCALL: u64 = 18;
+syscall!(YIELD_SYSCALL, pub fn yield_now());
 
-pub fn sleep(duration: Duration) {
+pub fn sleep(duration: Duration) -> Result<()> {
     const SLEEP_SYSCALL: u64 = 19;
-    let _ = syscall_macro::syscall!(SLEEP_SYSCALL, duration.as_micros() as usize, 0, 0, 0, 0);
+    syscall!(SLEEP_SYSCALL, fn sleep(duration: usize) -> Result<()>);
+    
+    sleep(duration.as_millis() as usize)
 }
+

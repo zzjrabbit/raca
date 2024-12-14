@@ -22,8 +22,10 @@ impl FileDescriptorInner {
         const OPEN_SYSCALL_ID: u64 = 1;
 
         let (ptr, len) = path.to_os_union();
+        
+        syscall!(OPEN_SYSCALL_ID, fn open(ptr: usize, len: usize, open_mode: usize) -> Result<usize>);
 
-        let fd = syscall!(OPEN_SYSCALL_ID, ptr, len, open_mode as usize,)?;
+        let fd = open(ptr, len, open_mode as usize)?;
 
         Ok(Self(fd, false))
     }
@@ -33,8 +35,8 @@ impl FileDescriptorInner {
         assert_ne!(self.1, true, "This File Descriptor had been closed!");
 
         const READ_SYSCALL_ID: u64 = 3;
-        syscall!(
-            READ_SYSCALL_ID,
+        syscall!(READ_SYSCALL_ID, fn read(fd: usize, ptr: usize, len: usize) -> Result<usize>);
+        read(
             self.0,
             buffer.as_ptr() as usize,
             buffer.len(),
@@ -60,8 +62,9 @@ impl FileDescriptorInner {
         assert_ne!(self.1, true, "This File Descriptor had been closed!");
 
         const WRITE_SYSCALL_ID: u64 = 4;
-        syscall!(
-            WRITE_SYSCALL_ID,
+        syscall!(WRITE_SYSCALL_ID, fn write(fd: usize, ptr: usize, len: usize) -> Result<usize>);
+        
+        write(
             self.0,
             buffer.as_ptr() as usize,
             buffer.len(),
@@ -73,22 +76,27 @@ impl FileDescriptorInner {
         assert_ne!(self.1, true, "This File Descriptor had been closed!");
 
         const LSEEK_SYSCALL_ID: u64 = 5;
-        syscall!(LSEEK_SYSCALL_ID, self.0, offset)
+        syscall!(LSEEK_SYSCALL_ID, fn lseek(fd: usize, offset: usize) -> Result<usize>);
+        
+        lseek(self.0, offset)
     }
 
     /// Get the size of the file.
     pub fn size(&self) -> Result<usize> {
         assert_ne!(self.1, true, "This File Descriptor had been closed!");
-
+        
         const FSIZE_SYSCALL_ID: u64 = 7;
-        syscall!(FSIZE_SYSCALL_ID, self.0,)
+        syscall!(FSIZE_SYSCALL_ID, fn fsize(fd: usize) -> Result<usize>);
+        
+        fsize(self.0)
     }
 
     pub(self) fn close(&mut self) {
         self.1 = true;
 
         const CLOSE_SYSCALL_ID: u64 = 6;
-        let _ = syscall!(CLOSE_SYSCALL_ID, self.0,);
+        syscall!(CLOSE_SYSCALL_ID, fn close(fd: usize));
+        close(self.0);
     }
 }
 

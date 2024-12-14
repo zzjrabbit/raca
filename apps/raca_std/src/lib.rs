@@ -5,6 +5,7 @@
 #![feature(variant_count)]
 #![feature(exact_size_is_empty)]
 #![allow(unsafe_op_in_unsafe_fn)]
+#![allow(improper_ctypes_definitions)]
 
 extern crate alloc;
 
@@ -27,7 +28,7 @@ pub mod thread;
 
 pub use error::*;
 
-unsafe extern "C" {
+unsafe extern "Rust" {
     fn main() -> usize;
 }
 
@@ -44,10 +45,20 @@ pub unsafe extern "sysv64" fn _start(
     env_start: usize,
     env_len: usize,
 ) -> ! {
-    env::ENV_INFO.lock().env_start = env_start;
-    env::ENV_INFO.lock().env_len = env_len;
+    //crate::println!("In");
+    let env_data = core::slice::from_raw_parts(env_start as *const u8, env_len);
+    unsafe {
+        env::ENV_INFO.force_unlock();
+    }
+    env::ENV_INFO.lock().copy_from_slice(env_data);
+    //crate::println!("In {} {}", argv, argc);
+    unsafe {
+        env::ARG_INFO.force_unlock();
+    }
     env::ARG_INFO.lock().argc = argc;
+    //crate::println!("In");
     env::ARG_INFO.lock().argv = argv;
+    //crate::println!("In");
     exit(main());
 }
 

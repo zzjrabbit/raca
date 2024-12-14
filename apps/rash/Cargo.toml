@@ -1,0 +1,8 @@
+[package]
+name = "rash"
+version = "0.2.0"
+edition = "2021"
+
+[dependencies]
+raca_std = {path = "../raca_std"}
+escape-bytes = "0.1.1"

@@ -2,6 +2,11 @@
 name = "raca_std"
 version = "0.1.0"
 edition = "2024"
+description = "Rust standard library for racaOS"
+repository = "https://github.com/zzjrabbit/racaOS"
+license = "MIT"
+categories = ["os"]
+keywords = ["os", "raca", "racaos", "std", "app"]
 
 [dependencies]
 syscall_macro = { path = "../syscall_macro" }

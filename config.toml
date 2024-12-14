@@ -3,5 +3,5 @@ modules = ["hello"]
 
 [initramfs]
 modules = ["hello","cracker","keyboard"]
-users = ["shell","caraint","hello1"]
+users = ["rash","caraint","hello1","commands"]
 init = "init"

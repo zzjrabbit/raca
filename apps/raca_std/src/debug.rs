@@ -4,6 +4,7 @@ use crate::Result;
 
 pub fn debug(message: &str) -> Result<()> {
     const DEBUG_SYSCALL_ID: u64 = 0;
+    syscall!(DEBUG_SYSCALL_ID, fn debug(message: *const u8, len: usize) -> Result<()>);
 
-    syscall!(DEBUG_SYSCALL_ID, message.as_ptr() as usize, message.len()).map(|_| ())
+    debug(message.as_ptr(), message.len())
 }

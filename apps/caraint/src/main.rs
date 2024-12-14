@@ -17,7 +17,7 @@ use raca_std::{
 extern crate alloc;
 
 #[no_mangle]
-pub extern "C" fn main() -> usize {
+pub fn main() -> usize {
     //let mut path = String::new();
     //stdin().read_line(&mut path);
     let path = raca_std::env::args().nth(1).unwrap();

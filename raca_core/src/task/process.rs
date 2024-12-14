@@ -52,7 +52,6 @@ pub struct Process {
     pub file_descriptor_manager: FileDescriptorManager,
     pub signal_manager: SignalManager,
     pub father: Option<WeakSharedProcess>,
-    pub env_info: (usize, usize),
 }
 
 impl Process {
@@ -65,7 +64,6 @@ impl Process {
             file_descriptor_manager: FileDescriptorManager::new(BTreeMap::new()),
             signal_manager: SignalManager::new(64),
             father: None,
-            env_info: (0, 0),
         };
 
         process
