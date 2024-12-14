@@ -2,6 +2,12 @@
 name = "syscall_macro"
 version = "0.1.0"
 edition = "2021"
+description = "macros for syscalls in x86_64"
+license = "MIT"
+repository = "https://github.com/zzjrabbit/racaOS"
+license = "MIT"
+categories = ["no_std","syscall","x86_64"]
+keywords = ["no_std","syscall","x86_64"]
 
 [lib]
 proc-macro = true

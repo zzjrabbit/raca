@@ -647,7 +647,7 @@ dependencies = [
 
 [[package]]
 name = "raca_std"
-version = "0.1.0"
+version = "16.0.0"
 dependencies = [
  "rustc-demangle",
  "spin",
