@@ -651,7 +651,7 @@ version = "16.0.0"
 dependencies = [
  "rustc-demangle",
  "spin",
- "syscall_macro",
+ "syscall_macro 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "talc",
  "unwinding",
 ]
@@ -836,6 +836,17 @@ dependencies = [
 [[package]]
 name = "syscall_macro"
 version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "syscall_macro"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fda2131a109bde54100f4976af114b0632b6de34f2e5d5074e8b2c2f9ed47cf8"
 dependencies = [
  "proc-macro2",
  "quote",

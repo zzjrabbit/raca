@@ -9,7 +9,7 @@ categories = ["os"]
 keywords = ["os", "raca", "racaos", "std", "app"]
 
 [dependencies]
-syscall_macro = { path = "../syscall_macro" }
+syscall_macro = "0.1"
 spin = "0.9.8"
 talc = "4.4.2"
 unwinding = { version = "0.2", default-features = false, features = [
