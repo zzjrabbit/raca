@@ -1,0 +1,16 @@
+[workspace]
+members = ["builder", "loongarch64", "kernel"]
+default-members = ["builder"]
+resolver = "3"
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+strip = true
+lto = "thin"
+
+[workspace.dependencies]
+log = "0.4.28"
+spin = "0.10.0"

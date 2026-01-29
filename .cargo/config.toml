@@ -1,0 +1,9 @@
+[unstable]
+bindeps = true
+
+[target.'cfg(target_os = "none")']
+rustflags = ["-Crelocation-model=static"]
+
+[target.loongarch64-unknown-linux-musl]
+linker = "rust-lld"
+rustflags = ["-C", "target-feature=-lasx,-lsx"]

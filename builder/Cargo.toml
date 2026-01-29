@@ -1,0 +1,21 @@
+[package]
+name = "builder"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+argh = "0.1.13"
+anyhow = "1.0.99"
+ovmf-prebuilt = "0.2.3"
+tempfile = "3.21.0"
+gpt = "4.1.0"
+fatfs = "0.3.6"
+walkdir = "2.5.0"
+zstd = "0.13.3"
+elf = "0.8.0"
+tar = "0.4.44"
+
+[dependencies.kernel]
+path = "../kernel"
+artifact = "bin"
+target = "loongarch64-unknown-none"
