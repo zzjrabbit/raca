@@ -12,7 +12,11 @@ use crate::arch::context::{
 };
 
 pub trait TaskContextApi {
+    /// # Safety
+    /// If you call it wrongly, the user program might not be able to execute correctly.
     unsafe fn set_program_counter(&mut self, pc: usize);
+    /// # Safety
+    /// If you call it wrongly, the user program might not be able to execute correctly.
     unsafe fn set_stack_pointer(&mut self, sp: usize);
 }
 
@@ -40,7 +44,7 @@ fn alloc_stack() -> &'static mut [u8] {
 pub(crate) extern "C" fn kernel_task_entry() -> ! {
     let current = TaskContext::current().unwrap();
     (current.func.take().unwrap())();
-    loop {}
+    crate::arch::idle_loop();
 }
 
 impl TaskContext {

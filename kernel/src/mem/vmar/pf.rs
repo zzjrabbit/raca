@@ -32,7 +32,7 @@ impl Vmar {
                 if mapping.vmo().is_iomem() {
                     let vmo = mapping.vmo().clone();
 
-                    let (io_mem, base_offset) = vmo.into_iomem().unwrap();
+                    let (io_mem, base_offset) = vmo.get_iomem().unwrap();
                     self.vm_space.cursor(start)?.map_iomem(
                         &io_mem,
                         prop,
@@ -59,13 +59,13 @@ impl Vmar {
 
                         let start = start + id * PAGE_SIZE;
 
-                        let (_, frame) = vmo.into_ram(id * PAGE_SIZE)?.unwrap();
+                        let (_, frame) = vmo.get_ram(id * PAGE_SIZE)?.unwrap();
 
                         self.vm_space.cursor(start)?.unmap(PAGE_SIZE)?;
                         self.vm_space.cursor(start)?.map(&frame, prop)?;
                     }
                 } else {
-                    let (_, frame) = mapping.vmo().into_ram(vaddr - start)?.unwrap();
+                    let (_, frame) = mapping.vmo().get_ram(vaddr - start)?.unwrap();
 
                     let start = align_down_by_page_size(vaddr);
 

@@ -9,6 +9,12 @@ pub struct CurrentModeInfoBuilder {
     value: u64,
 }
 
+impl Default for CurrentModeInfoBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CurrentModeInfoBuilder {
     pub fn new() -> Self {
         Self { value: 0 }

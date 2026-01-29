@@ -59,7 +59,7 @@ impl Vmo {
                         source.read_bytes(0, &mut buffer)?;
                         frame.write_bytes(0, &buffer)?;
 
-                        *dest = Some(frame.clone().into());
+                        *dest = Some(frame.clone());
                     }
                 }
                 Ok(Self {
@@ -76,7 +76,7 @@ impl Vmo {
 }
 
 impl Vmo {
-    pub(super) fn into_ram(&self, offset: usize) -> Result<Option<(usize, PhysicalMemoryRef)>> {
+    pub(super) fn get_ram(&self, offset: usize) -> Result<Option<(usize, PhysicalMemoryRef)>> {
         match self.inner.as_ref() {
             VmoInner::Ram { frames } => {
                 let id = offset / PAGE_SIZE;
@@ -96,7 +96,7 @@ impl Vmo {
         }
     }
 
-    pub(super) fn into_iomem(&self) -> Option<(Arc<IoMem>, usize)> {
+    pub(super) fn get_iomem(&self) -> Option<(Arc<IoMem>, usize)> {
         match self.inner.as_ref() {
             VmoInner::Ram { .. } => None,
             VmoInner::IoMem { iomem, offset } => Some((iomem.clone(), *offset)),

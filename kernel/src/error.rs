@@ -45,7 +45,6 @@ impl Debug for Error {
 
 impl core::error::Error for Error {}
 
-#[expect(clippy::upper_case_acronyms)]
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Errno {

@@ -34,7 +34,7 @@ pub fn current_page_table() -> RwLock<OffsetPageTable<'static>> {
     RwLock::new(page_table)
 }
 
-fn zodiac_property_converter(property: crate::mem::PageProperty) -> PageProperty {
+fn kernel_property_converter(property: crate::mem::PageProperty) -> PageProperty {
     let mut result = PageProperty::new();
 
     let flags = property.flags;
@@ -148,7 +148,7 @@ impl GeneralPageTable for OffsetPageTable<'_> {
                     self.map_to(
                         page,
                         frame,
-                        zodiac_property_converter(property),
+                        kernel_property_converter(property),
                         &mut *FRAME_ALLOCATOR.lock(),
                     )
                     .map_err(|err| Error::from(err))?
@@ -259,7 +259,7 @@ impl GeneralPageTable for OffsetPageTable<'_> {
         };
 
         let vaddr = VirtAddr::new(page_size.align_down(vaddr) as u64);
-        let property = zodiac_property_converter(property);
+        let property = kernel_property_converter(property);
 
         unsafe {
             match page_size {

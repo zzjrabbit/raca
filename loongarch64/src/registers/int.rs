@@ -16,6 +16,12 @@ pub struct TimerConfigBuilder {
     value: u64,
 }
 
+impl Default for TimerConfigBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TimerConfigBuilder {
     pub fn new() -> Self {
         TimerConfigBuilder { value: 0 }

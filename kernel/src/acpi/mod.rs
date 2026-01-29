@@ -27,7 +27,7 @@ fn init_acpi() -> Result<Acpi, AcpiError> {
         let rsdp_address = response.address() as VirtualAddress;
         let tables = AcpiTables::from_rsdp(
             AcpiHandler,
-            convert_virtual_to_physical(rsdp_address).into(),
+            convert_virtual_to_physical(rsdp_address),
         )?;
         AcpiPlatform::new(tables, AcpiHandler)?
     };

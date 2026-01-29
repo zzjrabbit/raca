@@ -7,6 +7,12 @@ pub struct CpuCell<T> {
     values: BTreeMap<u64, Mutex<T>>,
 }
 
+impl<T: Default> Default for CpuCell<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: Default> CpuCell<T> {
     pub fn new() -> Self {
         let mut values = BTreeMap::new();

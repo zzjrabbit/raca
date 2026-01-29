@@ -36,22 +36,12 @@ impl RawUserContext {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Default, Clone, Debug)]
 #[repr(C)]
 pub struct UserContext {
     user_context: RawUserContext,
     trap: u64,
     cpu_exception_info: Option<CpuExceptionInfo>,
-}
-
-impl Default for UserContext {
-    fn default() -> Self {
-        UserContext {
-            user_context: RawUserContext::default(),
-            trap: 0,
-            cpu_exception_info: None,
-        }
-    }
 }
 
 impl UserContext {

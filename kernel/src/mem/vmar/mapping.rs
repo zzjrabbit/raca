@@ -81,7 +81,7 @@ impl VmMapping {
     }
 
     pub fn split_at(self, addr: VirtualAddress) -> Result<(VmMapping, VmMapping)> {
-        if !self.contains(addr) || addr % PAGE_SIZE != 0 {
+        if !self.contains(addr) || !addr.is_multiple_of(PAGE_SIZE) {
             return Err(Errno::EINVAL.no_message());
         }
 
@@ -109,7 +109,7 @@ impl VmMapping {
         left: VirtualAddress,
         right: VirtualAddress,
     ) -> Result<(Option<Self>, Self, Option<Self>)> {
-        if left % PAGE_SIZE != 0 || right % PAGE_SIZE != 0 {
+        if !left.is_multiple_of(PAGE_SIZE) || !right.is_multiple_of(PAGE_SIZE) {
             return Err(Errno::EINVAL.no_message());
         }
 

@@ -97,6 +97,7 @@ impl Vmar {
             last_end = end;
         }
 
+        #[allow(clippy::absurd_extreme_comparisons)]
         if last_end >= MAX_USERSPACE_VADDR {
             Err(Errno::ENOMEM.no_message())
         } else {

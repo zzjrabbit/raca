@@ -19,6 +19,9 @@ pub struct OffsetPageTable<'a> {
 }
 
 impl<'a> OffsetPageTable<'a> {
+    /// # Safety
+    /// This function is safe, but marked as unsafe, 
+    /// because accessing page table might cause problems like PF.
     #[inline]
     pub unsafe fn new(
         lower_half: &'a mut PageTable,

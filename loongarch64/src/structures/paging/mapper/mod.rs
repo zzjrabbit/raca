@@ -174,6 +174,12 @@ pub struct PageProperty {
     cache_policy: CachePolicy,
 }
 
+impl Default for PageProperty {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PageProperty {
     pub fn new() -> Self {
         Self {

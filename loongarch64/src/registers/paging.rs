@@ -24,9 +24,9 @@ pub fn init_pwc() {
         | (DIR1_WIDTH << 15)
         | (DIR1_BASE << 10)
         | (PT_WIDTH << 5)
-        | (PT_BASE << 0);
+        | PT_BASE;
 
-    const PWCH: u64 = (DIR4_WIDTH << 18) | (DIR3_WIDTH << 6) | (DIR3_BASE << 0);
+    const PWCH: u64 = (DIR4_WIDTH << 18) | (DIR3_WIDTH << 6) | DIR3_BASE;
 
     PwcLow.write(PWCL);
     PwcHigh.write(PWCH);

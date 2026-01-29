@@ -22,6 +22,7 @@ impl<S: PageSize> PhysFrame<S> {
     /// Returns the frame that starts at the given virtual address.
     ///
     /// Returns an error if the address is not correctly aligned (i.e. is not a valid frame start).
+    #[allow(clippy::result_unit_err)]
     #[inline]
     pub const fn from_start_address(address: PhysAddr) -> Result<Self, ()> {
         if !address.is_aligned_u64(S::SIZE) {

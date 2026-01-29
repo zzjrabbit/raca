@@ -30,6 +30,8 @@ static KERNEL_VM_SPACE: Lazy<Arc<VmSpace>> = Lazy::new(|| {
 });
 
 impl VmSpace {
+    /// # Safety
+    /// Creating a kernel virtual memory space is unsafe, because it might break the kernel.
     pub unsafe fn kernel() -> Arc<VmSpace> {
         KERNEL_VM_SPACE.clone()
     }
@@ -333,6 +335,9 @@ impl VmWriter {
     }
 }
 
+/// Marker trait.
+/// # Safety
+/// This trait is only safe when you are SURE that the structure is plain.
 pub unsafe trait Pod: Copy + Sized {
     /// Creates a new instance of Pod type that is filled with zeroes.
     fn new_zeroed() -> Self {

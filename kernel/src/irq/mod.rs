@@ -5,6 +5,7 @@ use spin::Lazy;
 
 use crate::arch::{cpu_num, current_cpu, disable_int, enable_int};
 
+#[derive(Default)]
 pub struct DisabledLocalIrqGuard;
 
 impl DisabledLocalIrqGuard {
