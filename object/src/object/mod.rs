@@ -1,12 +1,22 @@
 use downcast_rs::{DowncastSync, impl_downcast};
 
+pub use handle::*;
 pub use obj::*;
+pub use rights::*;
 
+use crate::{Errno, Result};
+
+mod handle;
 mod obj;
+mod rights;
 
 pub trait KernelObject: DowncastSync + Sync + Send {
     fn type_name(&self) -> &'static str {
         core::any::type_name::<Self>()
+    }
+
+    fn peer(&self) -> Result<KObject> {
+        Err(Errno::NotSupported.no_message())
     }
 }
 impl_downcast!(sync KernelObject);

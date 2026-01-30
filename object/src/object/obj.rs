@@ -1,6 +1,9 @@
 use core::ops::Deref;
 
-use alloc::{string::String, sync::Arc};
+use alloc::{
+    string::String,
+    sync::{Arc, Weak},
+};
 use spin::Mutex;
 
 use super::KernelObject;
@@ -26,7 +29,6 @@ macro_rules! impl_ko {
     };
 }
 
-#[derive(Clone)]
 pub struct TypedKObject<T: KernelObject> {
     inner: Arc<T>,
     data: Arc<KObjectData>,
@@ -43,6 +45,15 @@ impl<T: KernelObject> TypedKObject<T> {
     }
 }
 
+impl<T: KernelObject> Clone for TypedKObject<T> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            data: self.data.clone(),
+        }
+    }
+}
+
 impl_ko!(TypedKObject, T, (T: KernelObject));
 
 impl<T: KernelObject> TypedKObject<T> {
@@ -52,11 +63,59 @@ impl<T: KernelObject> TypedKObject<T> {
             data: self.data.clone(),
         }
     }
+
+    pub fn downgrade(&self) -> WeakTypedKObject<T> {
+        WeakTypedKObject {
+            inner: Arc::downgrade(&self.inner),
+            data: Arc::downgrade(&self.data),
+        }
+    }
+
+    pub unsafe fn get_mut_unchecked(&mut self) -> &mut T {
+        unsafe { Arc::get_mut_unchecked(&mut self.inner) }
+    }
 }
 
 impl<T: KernelObject> From<TypedKObject<T>> for KObject {
     fn from(obj: TypedKObject<T>) -> Self {
         obj.as_kobject()
+    }
+}
+
+pub struct WeakTypedKObject<T: KernelObject> {
+    inner: Weak<T>,
+    data: Weak<KObjectData>,
+}
+
+impl<T: KernelObject> WeakTypedKObject<T> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl<T: KernelObject> Default for WeakTypedKObject<T> {
+    fn default() -> Self {
+        Self {
+            inner: Weak::default(),
+            data: Weak::default(),
+        }
+    }
+}
+
+impl<T: KernelObject> Clone for WeakTypedKObject<T> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            data: self.data.clone(),
+        }
+    }
+}
+
+impl<T: KernelObject> WeakTypedKObject<T> {
+    pub fn upgrade(&self) -> Option<TypedKObject<T>> {
+        self.inner
+            .upgrade()
+            .and_then(|inner| self.data.upgrade().map(|data| TypedKObject { inner, data }))
     }
 }
 
@@ -89,6 +148,27 @@ impl KObject {
                 data: self.data.clone(),
             })
             .ok()
+    }
+
+    pub fn downgrade(&self) -> WeakKObject {
+        WeakKObject {
+            inner: Arc::downgrade(&self.inner),
+            data: Arc::downgrade(&self.data),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct WeakKObject {
+    inner: Weak<dyn KernelObject>,
+    data: Weak<KObjectData>,
+}
+
+impl WeakKObject {
+    pub fn upgrade(&self) -> Option<KObject> {
+        self.inner
+            .upgrade()
+            .and_then(|inner| self.data.upgrade().map(|data| KObject { inner, data }))
     }
 }
 

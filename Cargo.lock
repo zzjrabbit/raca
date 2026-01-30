@@ -523,6 +523,7 @@ dependencies = [
 name = "object"
 version = "0.1.0"
 dependencies = [
+ "bitflags 2.10.0",
  "downcast-rs",
  "spin 0.10.0",
 ]
