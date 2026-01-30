@@ -9,3 +9,4 @@ mod error;
 pub mod ipc;
 pub mod object;
 pub mod task;
+pub mod mem;

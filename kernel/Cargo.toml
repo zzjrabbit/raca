@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-kernel_hal = { version = "0.1.0", path = "../kernel_hal" }
+kernel_hal_bare = { version = "0.1.0", path = "../kernel_hal_bare" }
 limine = "0.5.0"
 log.workspace = true
 object = { version = "0.1.0", path = "../object" }
