@@ -3,10 +3,9 @@
 
 extern crate alloc;
 
-pub use error::*;
+use errors::*;
 
-mod error;
 pub mod ipc;
+pub mod mem;
 pub mod object;
 pub mod task;
-pub mod mem;

@@ -4,3 +4,16 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+bitflags = "2.10.0"
+errors = { version = "0.1.0", path = "../errors" }
+spin.workspace = true
+tempfile = { version = "3.24.0", optional = true }
+
+[dependencies.nix]
+version = "0.31.1"
+optional = true
+features = ["fs", "mman"]
+
+[features]
+default = ["libos"]
+libos = ["dep:nix", "dep:tempfile"]

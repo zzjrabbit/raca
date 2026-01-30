@@ -1,3 +1,7 @@
+#![no_std]
+
+extern crate alloc;
+
 use core::fmt::{Debug, Display};
 
 use alloc::string::String;

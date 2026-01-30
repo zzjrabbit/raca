@@ -156,6 +156,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
+name = "cfg_aliases"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
+
+[[package]]
 name = "chrono"
 version = "0.4.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -245,6 +251,10 @@ dependencies = [
  "libc",
  "windows-sys 0.61.2",
 ]
+
+[[package]]
+name = "errors"
+version = "0.1.0"
 
 [[package]]
 name = "fastrand"
@@ -415,7 +425,7 @@ dependencies = [
 name = "kernel"
 version = "0.1.0"
 dependencies = [
- "kernel_hal",
+ "kernel_hal_bare",
  "limine",
  "log",
  "object",
@@ -423,6 +433,17 @@ dependencies = [
 
 [[package]]
 name = "kernel_hal"
+version = "0.1.0"
+dependencies = [
+ "bitflags 2.10.0",
+ "errors",
+ "nix",
+ "spin 0.10.0",
+ "tempfile",
+]
+
+[[package]]
+name = "kernel_hal_bare"
 version = "0.1.0"
 dependencies = [
  "acpi",
@@ -511,6 +532,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "nix"
+version = "0.31.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "225e7cfe711e0ba79a68baeddb2982723e4235247aefce1482f2f16c27865b66"
+dependencies = [
+ "bitflags 2.10.0",
+ "cfg-if",
+ "cfg_aliases",
+ "libc",
+]
+
+[[package]]
 name = "num-traits"
 version = "0.2.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -525,6 +558,8 @@ version = "0.1.0"
 dependencies = [
  "bitflags 2.10.0",
  "downcast-rs",
+ "errors",
+ "kernel_hal",
  "spin 0.10.0",
 ]
 
