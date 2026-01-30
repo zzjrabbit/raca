@@ -9,7 +9,7 @@ static BASE_REVISION: BaseRevision = BaseRevision::with_revision(4);
 
 #[unsafe(no_mangle)]
 pub extern "C" fn kmain() -> ! {
-    kernel::init();
-    log::info!("KERNEL INITIALIZED!");
-    kernel::arch::idle_loop();
+    kernel_hal::init();
+    log::info!("kernel initialized");
+    kernel_hal::arch::idle_loop();
 }

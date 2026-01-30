@@ -15,7 +15,6 @@ pub mod io;
 pub mod irq;
 pub mod logger;
 pub mod mem;
-pub mod obj;
 mod panic;
 pub mod sync;
 pub mod task;

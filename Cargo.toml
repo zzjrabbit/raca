@@ -1,5 +1,5 @@
 [workspace]
-members = ["builder", "loongarch64", "kernel"]
+members = ["builder", "loongarch64", "kernel", "object", "kernel_hal"]
 default-members = ["builder"]
 resolver = "3"
 

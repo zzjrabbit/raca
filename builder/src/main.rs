@@ -105,7 +105,6 @@ fn main() -> Result<()> {
 
     cmd.args(["-device", "ramfb"]);
 
-    println!("command: {:?}", cmd);
     cmd.spawn()?.wait()?.exit_ok()?;
     Ok(())
 }
