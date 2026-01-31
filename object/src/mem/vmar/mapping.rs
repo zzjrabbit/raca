@@ -59,7 +59,11 @@ impl VmMapping {
     }
 
     pub fn overlaps(&self, other: &VmMapping) -> bool {
-        self.start < other.end() && other.start < self.end()
+        self.overlap_range(other.start, other.size)
+    }
+
+    pub fn overlap_range(&self, start: VirtAddr, size: usize) -> bool {
+        !(start >= self.end() && start + size < self.start)
     }
 
     pub fn contains_range(&self, start: VirtAddr, size: usize) -> bool {

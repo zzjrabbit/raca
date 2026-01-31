@@ -5,6 +5,10 @@ use super::{PAGE_SIZE, Vmar, align_down_by_page_size};
 
 impl Vmar {
     pub fn handle_page_fault(&self, vaddr: VirtAddr, perm_required: MMUFlags) -> Result<bool> {
+        if let Some(child) = self.find_child(vaddr) {
+            return child.handle_page_fault(vaddr, perm_required);
+        }
+
         let mut inner = self.inner.write();
         let mut handled = false;
         for mapping in inner.vm_mappings.iter_mut() {

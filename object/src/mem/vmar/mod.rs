@@ -18,11 +18,14 @@ mod rw;
 pub struct Vmar {
     vm_space: Arc<VmSpace>,
     inner: RwLock<VmarInner>,
+    base: VirtAddr,
+    size: usize,
 }
 
 #[derive(Debug)]
 struct VmarInner {
     vm_mappings: Vec<VmMapping>,
+    children: Vec<Arc<Vmar>>,
 }
 
 impl Vmar {
@@ -31,7 +34,10 @@ impl Vmar {
             vm_space: Arc::new(VmSpace::new_user()),
             inner: RwLock::new(VmarInner {
                 vm_mappings: Vec::new(),
+                children: Vec::new(),
             }),
+            base: USER_ASPACE_BASE,
+            size: USER_ASPACE_SIZE,
         })
     }
 }
@@ -40,16 +46,98 @@ impl Vmar {
     pub fn activate(&self) {
         self.vm_space.activate();
     }
+
+    pub fn base(&self) -> VirtAddr {
+        self.base
+    }
+
+    pub fn size(&self) -> usize {
+        self.size
+    }
+
+    pub fn end(&self) -> VirtAddr {
+        self.base + self.size
+    }
+}
+
+impl Vmar {
+    fn add_child(&self, base: VirtAddr, size: usize) -> Result<Arc<Self>> {
+        let child = Arc::new(Self {
+            vm_space: self.vm_space.clone(),
+            inner: RwLock::new(VmarInner {
+                vm_mappings: Vec::new(),
+                children: Vec::new(),
+            }),
+            base,
+            size,
+        });
+
+        self.inner.write().children.push(child.clone());
+        Ok(child)
+    }
+
+    pub fn create_child(&self, base: VirtAddr, size: usize) -> Result<Arc<Self>> {
+        if !self.range_is_completely_free(base, size) {
+            return Err(Errno::OutOfMemory.no_message());
+        }
+
+        self.add_child(base, size)
+    }
+
+    pub fn allocate_child(&self, size: usize) -> Result<Arc<Self>> {
+        if size > self.size {
+            return Err(Errno::OutOfMemory.no_message());
+        }
+
+        let mut regions = {
+            let inner = self.inner.read();
+            inner
+                .vm_mappings
+                .iter()
+                .map(|mapping| (mapping.start(), mapping.end()))
+                .chain(
+                    inner
+                        .children
+                        .iter()
+                        .map(|child| (child.base(), child.base() + child.size())),
+                )
+                .collect::<Vec<_>>()
+        };
+        regions.sort();
+
+        let mut last_end = self.base();
+
+        for (start, end) in regions {
+            let usable = start - last_end;
+            if usable >= size {
+                return self.add_child(last_end, size);
+            }
+            last_end = end;
+        }
+
+        if self.end() - last_end < size {
+            Err(Errno::OutOfMemory.no_message())
+        } else {
+            self.add_child(last_end, size)
+        }
+    }
 }
 
 impl Vmar {
     pub fn map(
         &self,
-        addr: VirtAddr,
+        offset: usize,
         size: usize,
         prop: PageProperty,
         process_overlap: bool,
     ) -> Result<Vmo> {
+        let addr = self.base() + offset;
+        if !self.contains(addr) {
+            return Err(Errno::InvArg.no_message());
+        }
+        if !self.range_is_child_free(addr, size) {
+            return Err(Errno::OutOfMemory.no_message());
+        }
         if size == 0 {
             return Vmo::allocate_ram(0);
         }
@@ -70,42 +158,12 @@ impl Vmar {
         Ok(vmo)
     }
 
-    pub fn map_with_alloc(&self, size: usize, prop: PageProperty) -> Result<(VirtAddr, Vmo)> {
-        let regions = self
-            .inner
-            .read()
-            .vm_mappings
-            .iter()
-            .map(|mapping| (mapping.start(), mapping.end()))
-            .collect::<Vec<_>>();
-
-        let mut last_end = USER_ASPACE_BASE;
-
-        for (start, end) in regions {
-            if start < last_end {
-                continue;
-            }
-
-            let usable = start - last_end;
-            if usable >= size {
-                let vmo = self.map(last_end, size, prop, true)?;
-                return Ok((last_end, vmo));
-            }
-            last_end = end;
-        }
-
-        #[allow(clippy::absurd_extreme_comparisons)]
-        if last_end >= USER_ASPACE_BASE + USER_ASPACE_SIZE {
-            Err(Errno::OutOfMemory.no_message())
-        } else {
-            let vmo = self.map(last_end, size, prop, true)?;
-            Ok((last_end, vmo))
-        }
-    }
-
     pub fn unmap(&self, addr: VirtAddr, size: usize) -> Result<()> {
         if size == 0 {
             return Ok(());
+        }
+        if !self.range_is_child_free(addr, size) {
+            return Err(Errno::InvArg.with_message("Range is in child vmar."));
         }
 
         let mut inner = self.inner.write();
@@ -130,6 +188,9 @@ impl Vmar {
     pub fn protect(&self, addr: VirtAddr, size: usize, flags: MMUFlags) -> Result<()> {
         if size == 0 {
             return Ok(());
+        }
+        if !self.range_is_child_free(addr, size) {
+            return Err(Errno::InvArg.with_message("Range is in child vmar."));
         }
 
         {
@@ -258,8 +319,51 @@ impl Vmar {
 
         Ok(Arc::new(Self {
             vm_space: Arc::new(VmSpace::new_user()),
-            inner: RwLock::new(VmarInner { vm_mappings }),
+            inner: RwLock::new(VmarInner {
+                vm_mappings,
+                children: Vec::new(),
+            }),
+            base: self.base,
+            size: self.size,
         }))
+    }
+}
+
+impl Vmar {
+    fn contains(&self, address: VirtAddr) -> bool {
+        address >= self.base && address < self.base + self.size
+    }
+
+    fn overlap_range(&self, start: VirtAddr, size: usize) -> bool {
+        !(start >= self.end() && start + size < self.base())
+    }
+
+    fn range_is_child_free(&self, start: VirtAddr, size: usize) -> bool {
+        !self
+            .inner
+            .read()
+            .children
+            .iter()
+            .any(|child| child.overlap_range(start, size))
+    }
+
+    fn range_is_completely_free(&self, start: VirtAddr, size: usize) -> bool {
+        self.range_is_child_free(start, size)
+            && !self
+                .inner
+                .read()
+                .vm_mappings
+                .iter()
+                .any(|mapping| mapping.overlap_range(start, size))
+    }
+
+    fn find_child(&self, address: VirtAddr) -> Option<Arc<Vmar>> {
+        self.inner
+            .read()
+            .children
+            .iter()
+            .find(|child| child.contains(address))
+            .cloned()
     }
 }
 
@@ -281,13 +385,15 @@ mod tests {
         let vmar = Vmar::new();
         vmar.activate();
 
-        let (address, _) = vmar
-            .map_with_alloc(4 * 1024, PageProperty::kernel_code())
+        let child = vmar.allocate_child(4 * 1024).unwrap();
+        child
+            .map(0, 4 * 1024, PageProperty::kernel_code(), true)
             .unwrap();
+        let address = child.base();
 
-        vmar.protect(address, 4 * 1024, MMUFlags::WRITE).unwrap();
+        child.protect(address, 4 * 1024, MMUFlags::WRITE).unwrap();
 
-        vmar.unmap(address, 4 * 1024).unwrap();
+        child.unmap(address, 4 * 1024).unwrap();
     }
 
     #[test]
@@ -295,15 +401,17 @@ mod tests {
         let vmar = Vmar::new();
         vmar.activate();
 
-        let (address, _) = vmar
-            .map_with_alloc(4 * 1024, PageProperty::kernel_code())
+        let child = vmar.allocate_child(4 * 1024).unwrap();
+        child
+            .map(0, 4 * 1024, PageProperty::kernel_code(), true)
             .unwrap();
+        let address = child.base();
 
-        vmar.protect(address, 4 * 1024, MMUFlags::WRITE).unwrap();
+        child.protect(address, 4 * 1024, MMUFlags::WRITE).unwrap();
 
-        vmar.write_val(address, &42usize).unwrap();
-        assert_eq!(vmar.read_val::<usize>(address).unwrap(), 42);
+        child.write_val(address, &42usize).unwrap();
+        assert_eq!(child.read_val::<usize>(address).unwrap(), 42);
 
-        vmar.unmap(address, 4 * 1024).unwrap();
+        child.unmap(address, 4 * 1024).unwrap();
     }
 }
