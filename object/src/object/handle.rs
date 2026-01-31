@@ -19,7 +19,7 @@ impl Handle {
 mod tests {
     use crate::{
         impl_kobj, new_kobj,
-        object::{KObjectBase, KernelObject},
+        object::KObjectBase,
     };
 
     use super::*;

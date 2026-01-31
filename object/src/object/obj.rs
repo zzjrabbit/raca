@@ -50,7 +50,7 @@ impl KObjectBase {
 #[macro_export]
 macro_rules! impl_kobj {
     ($ty: ident $( $f: tt )*) => {
-        impl KernelObject for $ty {
+        impl $crate::object::KernelObject for $ty {
             fn type_name(&self) -> &str {
                 stringify!($ty)
             }

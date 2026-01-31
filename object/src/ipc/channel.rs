@@ -7,7 +7,7 @@ use spin::Mutex;
 
 use crate::{
     Errno, Result, impl_kobj, new_kobj,
-    object::{Handle, KObjectBase, KernelObject, Upcast},
+    object::{Handle, KObjectBase, Upcast},
 };
 
 pub struct Channel {
@@ -82,6 +82,8 @@ impl Channel {
 
 #[cfg(test)]
 mod tests {
+    use crate::object::KernelObject;
+
     use super::*;
 
     #[test]
