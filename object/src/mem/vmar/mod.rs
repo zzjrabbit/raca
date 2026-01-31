@@ -20,6 +20,7 @@ pub struct Vmar {
     inner: RwLock<VmarInner>,
     base: VirtAddr,
     size: usize,
+    is_root: bool,
 }
 
 #[derive(Debug)]
@@ -29,7 +30,7 @@ struct VmarInner {
 }
 
 impl Vmar {
-    pub fn new() -> Arc<Self> {
+    pub fn new_root() -> Arc<Self> {
         Arc::new(Self {
             vm_space: Arc::new(VmSpace::new_user()),
             inner: RwLock::new(VmarInner {
@@ -38,6 +39,7 @@ impl Vmar {
             }),
             base: USER_ASPACE_BASE,
             size: USER_ASPACE_SIZE,
+            is_root: true,
         })
     }
 }
@@ -70,6 +72,7 @@ impl Vmar {
             }),
             base,
             size,
+            is_root: false,
         });
 
         self.inner.write().children.push(child.clone());
@@ -303,6 +306,10 @@ impl Vmar {
 
 impl Vmar {
     pub fn deep_clone(&self) -> Result<Arc<Self>> {
+        if !self.is_root {
+            return Err(Errno::InvArg.with_message("Cannot deep clone non-root VMAR!"));
+        }
+
         let mut vm_mappings = Vec::new();
         for mapping in self.inner.write().vm_mappings.iter_mut() {
             vm_mappings.push(mapping.clone()?);
@@ -325,6 +332,7 @@ impl Vmar {
             }),
             base: self.base,
             size: self.size,
+            is_root: true,
         }))
     }
 }
@@ -377,12 +385,28 @@ mod tests {
 
     #[test]
     fn new_vmar() {
-        let _vmar = Vmar::new();
+        let _vmar = Vmar::new_root();
+    }
+
+    #[test]
+    fn fixed_child() {
+        let vmar = Vmar::new_root();
+        vmar.activate();
+
+        let child = vmar.create_child(0x1000, 4 * 1024).unwrap();
+        child
+            .map(0, 4 * 1024, PageProperty::kernel_code(), true)
+            .unwrap();
+        let address = child.base();
+
+        child.protect(address, 4 * 1024, MMUFlags::WRITE).unwrap();
+
+        child.unmap(address, 4 * 1024).unwrap();
     }
 
     #[test]
     fn maps() {
-        let vmar = Vmar::new();
+        let vmar = Vmar::new_root();
         vmar.activate();
 
         let child = vmar.allocate_child(4 * 1024).unwrap();
@@ -398,7 +422,7 @@ mod tests {
 
     #[test]
     fn read_write() {
-        let vmar = Vmar::new();
+        let vmar = Vmar::new_root();
         vmar.activate();
 
         let child = vmar.allocate_child(4 * 1024).unwrap();
