@@ -1,5 +1,6 @@
 use std::{num::NonZeroUsize, os::fd::OwnedFd, ptr::NonNull, sync::Arc};
 
+use errors::Errno;
 use nix::{
     fcntl::{self, OFlag},
     sys::{
@@ -11,18 +12,27 @@ use nix::{
 use spin::{Lazy, RwLock};
 use tempfile::tempdir;
 
-use crate::{GeneralPageTable, MMUFlags, PageProperty, PageSize, PhysAddr, VirtAddr};
+use crate::{
+    mem::{
+        CachePolicy, GeneralPageTable, MMUFlags, PageProperty, PageSize, PhysAddr, Privilege,
+        VirtAddr,
+    },
+    platform::mem::info::MemoryRegion,
+};
 
 pub(super) const PMEM_MAP_VADDR: VirtAddr = 0x8_0000_0000;
 pub(super) const PMEM_SIZE: usize = 0x4000_0000;
 
 pub(super) static PHYS_MEM: Lazy<Memory> = Lazy::new(|| Memory::new(PMEM_SIZE));
+static MAPPED: RwLock<Vec<MemoryRegion>> = RwLock::new(Vec::new());
 
 pub fn phys_to_virt(phys: PhysAddr) -> VirtAddr {
+    Lazy::force(&PHYS_MEM);
     phys + PMEM_MAP_VADDR
 }
 
 pub fn virt_to_phys(virt: VirtAddr) -> PhysAddr {
+    Lazy::force(&PHYS_MEM);
     virt - PMEM_MAP_VADDR
 }
 
@@ -41,16 +51,49 @@ impl GeneralPageTable for LibOsPageTable {
 
     fn map(
         &mut self,
-        page: crate::Page,
+        page: crate::mem::Page,
         paddr: PhysAddr,
         property: PageProperty,
     ) -> Result<(), errors::Error> {
+        log::debug!("mapping page {:#x} to {:#x}", page.vaddr, paddr);
         PHYS_MEM.mmap(page.vaddr, page.size as usize, paddr, property);
+        MAPPED.write().push(MemoryRegion::new(
+            page.vaddr,
+            page.size as usize,
+            paddr,
+            property,
+        ));
         Ok(())
     }
 
     fn unmap(&mut self, vaddr: VirtAddr) -> Result<PageSize, errors::Error> {
         PHYS_MEM.munmap(vaddr, PageSize::Size4K as usize);
+
+        let mut mapped = MAPPED.write();
+
+        let mut to_process = Vec::new();
+        for (id, region) in mapped.iter().enumerate() {
+            if region.contains(vaddr) {
+                to_process.push(id);
+            }
+        }
+
+        let mut new_regions = Vec::new();
+        for id in to_process {
+            let region = mapped.remove(id);
+
+            let (start, _, end) = region.split_range(vaddr, vaddr + PageSize::Size4K as usize)?;
+
+            if let Some(new_region) = start {
+                new_regions.push(new_region);
+            }
+            if let Some(new_region) = end {
+                new_regions.push(new_region);
+            }
+        }
+
+        mapped.extend(new_regions);
+
         Ok(PageSize::Size4K)
     }
 
@@ -60,7 +103,65 @@ impl GeneralPageTable for LibOsPageTable {
         property: PageProperty,
     ) -> Result<PageSize, errors::Error> {
         PHYS_MEM.mprotect(vaddr, PageSize::Size4K as usize, property);
+
+        let mut mapped = MAPPED.write();
+
+        let mut to_process = Vec::new();
+        for (id, region) in mapped.iter().enumerate() {
+            if region.contains(vaddr) {
+                to_process.push(id);
+            }
+        }
+
+        let mut new_regions = Vec::new();
+        for id in to_process {
+            let region = mapped.remove(id);
+
+            let (start, mut taken, end) =
+                region.split_range(vaddr, vaddr + PageSize::Size4K as usize)?;
+
+            taken.set_property(property);
+            new_regions.push(taken);
+
+            if let Some(new_region) = start {
+                new_regions.push(new_region);
+            }
+            if let Some(new_region) = end {
+                new_regions.push(new_region);
+            }
+        }
+
+        mapped.extend(new_regions);
+
         Ok(PageSize::Size4K)
+    }
+
+    fn query(
+        &mut self,
+        vaddr: VirtAddr,
+    ) -> Result<(PhysAddr, PageProperty, PageSize), errors::Error> {
+        if (PMEM_MAP_VADDR..PMEM_MAP_VADDR + PMEM_SIZE).contains(&vaddr) {
+            return Ok((
+                vaddr - PMEM_MAP_VADDR,
+                PageProperty::new(
+                    MMUFlags::READ | MMUFlags::WRITE,
+                    CachePolicy::CacheCoherent,
+                    Privilege::KernelOnly,
+                ),
+                PageSize::Size4K,
+            ));
+        }
+        let mapped = MAPPED.read();
+        for region in mapped.iter() {
+            if region.contains(vaddr) {
+                return Ok((
+                    region.paddr() + vaddr - region.vaddr(),
+                    region.property(),
+                    PageSize::Size4K,
+                ));
+            }
+        }
+        Err(Errno::NotMapped.no_message())
     }
 }
 
@@ -97,6 +198,14 @@ impl Memory {
     }
 
     pub fn mmap(&self, vaddr: VirtAddr, len: usize, paddr: PhysAddr, prop: PageProperty) {
+        log::debug!(
+            "mmap: vaddr={:#x}, len={:#x}, paddr={:#x}, prop={:?}",
+            vaddr,
+            len,
+            paddr,
+            prop
+        );
+
         assert!(paddr < self.size);
         assert!(paddr + len <= self.size);
 

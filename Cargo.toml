@@ -1,6 +1,6 @@
 [workspace]
-members = ["builder", "loongarch64", "kernel", "object", "kernel_hal", "kernel_hal_bare", "errors"]
-default-members = ["builder"]
+members = ["builder", "loongarch64", "kernel", "object", "kernel_hal", "kernel_hal_bare", "errors", "libos_loader"]
+default-members = ["libos_loader"]
 resolver = "3"
 
 [profile.dev]

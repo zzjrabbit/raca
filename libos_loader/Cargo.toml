@@ -1,0 +1,10 @@
+[package]
+name = "libos_loader"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+env_logger = "0.11.8"
+kernel_hal = { version = "0.1.0", path = "../kernel_hal" }
+log.workspace = true
+object = { version = "0.1.0", path = "../object" }

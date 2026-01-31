@@ -110,6 +110,38 @@ impl PageProperty {
             privilege,
         }
     }
+
+    pub fn kernel_code() -> Self {
+        PageProperty {
+            flags: MMUFlags::READ | MMUFlags::EXECUTE,
+            cache_policy: CachePolicy::CacheCoherent,
+            privilege: Privilege::KernelOnly,
+        }
+    }
+
+    pub const fn kernel_data() -> Self {
+        PageProperty {
+            flags: MMUFlags::from_bits_truncate(MMUFlags::READ.bits() | MMUFlags::WRITE.bits()),
+            cache_policy: CachePolicy::CacheCoherent,
+            privilege: Privilege::KernelOnly,
+        }
+    }
+
+    pub const fn user_code() -> Self {
+        PageProperty {
+            flags: MMUFlags::from_bits_truncate(MMUFlags::READ.bits() | MMUFlags::EXECUTE.bits()),
+            cache_policy: CachePolicy::CacheCoherent,
+            privilege: Privilege::User,
+        }
+    }
+
+    pub fn user_data() -> Self {
+        PageProperty {
+            flags: MMUFlags::READ | MMUFlags::WRITE,
+            cache_policy: CachePolicy::CacheCoherent,
+            privilege: Privilege::User,
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -117,6 +149,7 @@ pub trait GeneralPageTable: Sync + Send {
     fn map(&mut self, page: Page, paddr: PhysAddr, property: PageProperty) -> Result<(), Error>;
     fn unmap(&mut self, vaddr: VirtAddr) -> Result<PageSize, Error>;
     fn update(&mut self, vaddr: VirtAddr, property: PageProperty) -> Result<PageSize, Error>;
+    fn query(&mut self, vaddr: VirtAddr) -> Result<(PhysAddr, PageProperty, PageSize), Error>;
 
     fn deep_copy(&self) -> Arc<RwLock<dyn GeneralPageTable>>;
     fn activate(&self);
@@ -171,6 +204,28 @@ pub trait GeneralPageTable: Sync + Send {
         let end_vaddr = vaddr + size;
         while vaddr < end_vaddr {
             let page_size = match self.unmap(vaddr) {
+                Ok(s) => {
+                    assert!(s.is_aligned(vaddr));
+                    s as usize
+                }
+                Err(e) => return Err(e),
+            };
+            vaddr += page_size;
+            assert!(vaddr <= end_vaddr);
+        }
+        Ok(())
+    }
+
+    fn update_cont(
+        &mut self,
+        start_vaddr: VirtAddr,
+        size: usize,
+        property: PageProperty,
+    ) -> Result<(), Error> {
+        let mut vaddr = start_vaddr;
+        let end_vaddr = vaddr + size;
+        while vaddr < end_vaddr {
+            let page_size = match self.update(vaddr, property) {
                 Ok(s) => {
                     assert!(s.is_aligned(vaddr));
                     s as usize

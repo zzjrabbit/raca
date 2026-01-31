@@ -10,3 +10,4 @@ rustflags = ["-C", "target-feature=-lasx,-lsx"]
 
 [alias]
 testo = "test --package object"
+testh = "test --package kernel_hal"

@@ -29,6 +29,16 @@ pub struct Error {
     message: String,
 }
 
+impl Error {
+    pub fn errno(&self) -> Errno {
+        self.errno
+    }
+
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+}
+
 impl From<Error> for i32 {
     fn from(error: Error) -> Self {
         error.errno as i32
@@ -60,4 +70,8 @@ pub enum Errno {
     NotSupported = 6,
     PeerClosed = 7,
     ShouldWait = 8,
+    OutOfMemory = 9,
+    NotMapped = 10,
+    PageFault = 11,
+    TooBig = 12,
 }

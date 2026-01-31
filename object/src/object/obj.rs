@@ -71,6 +71,12 @@ impl<T: KernelObject> TypedKObject<T> {
         }
     }
 
+    /// # Safety
+    /// If any other TypedKObject or WeakTypedKObject pointers to the same allocation exist,
+    /// then they must not be dereferenced or have active borrows for the duration of the returned borrow,
+    /// and their inner type must be exactly the same as the inner type of this Rc (including lifetimes).
+    /// This is trivially the case if no such pointers exist,
+    /// for example immediately after TypedKObject::new.
     pub unsafe fn get_mut_unchecked(&mut self) -> &mut T {
         unsafe { Arc::get_mut_unchecked(&mut self.inner) }
     }

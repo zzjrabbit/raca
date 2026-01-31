@@ -2,15 +2,13 @@
 
 extern crate alloc;
 
-pub use imp::*;
-pub use page_table::*;
-
-mod page_table;
+pub mod io;
+pub mod mem;
 
 #[cfg(feature = "libos")]
 #[path = "libos/mod.rs"]
-mod imp;
+pub mod platform;
 
 #[cfg(not(feature = "libos"))]
 #[path = "bare/mod.rs"]
-mod imp;
+pub mod platform;
