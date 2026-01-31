@@ -1,15 +1,29 @@
-use alloc::{collections::vec_deque::VecDeque, vec::Vec};
+use alloc::{
+    collections::vec_deque::VecDeque,
+    sync::{Arc, Weak},
+    vec::Vec,
+};
 use spin::Mutex;
 
 use crate::{
-    Errno, Result,
-    object::{Handle, KernelObject, TypedKObject, WeakTypedKObject},
+    Errno, Result, impl_kobj, new_kobj,
+    object::{Handle, KObjectBase, KernelObject, Upcast},
 };
 
 pub struct Channel {
-    peer: WeakTypedKObject<Channel>,
+    peer: Weak<Self>,
     recv_queue: Mutex<VecDeque<MessagePacket>>,
+    base: KObjectBase,
 }
+
+impl_kobj!(Channel
+    fn peer(&self) -> Result<crate::object::KObject> {
+        self.peer
+            .upgrade()
+            .map(|p| p.upcast())
+            .ok_or(Errno::PeerClosed.no_message())
+    }
+);
 
 #[derive(Default)]
 pub struct MessagePacket {
@@ -17,28 +31,19 @@ pub struct MessagePacket {
     pub handles: Vec<Handle>,
 }
 
-impl KernelObject for Channel {
-    fn peer(&self) -> Result<crate::object::KObject> {
-        self.peer
-            .upgrade()
-            .map(|p| p.into())
-            .ok_or(Errno::PeerClosed.no_message())
-    }
-}
-
 impl Channel {
-    pub fn new() -> (TypedKObject<Self>, TypedKObject<Self>) {
-        let mut channel0 = TypedKObject::new(Self {
-            peer: WeakTypedKObject::default(),
+    pub fn new() -> (Arc<Self>, Arc<Self>) {
+        let mut channel0 = new_kobj!({
+            peer: Weak::default(),
             recv_queue: Mutex::new(VecDeque::new()),
         });
-        let channel1 = TypedKObject::new(Self {
-            peer: channel0.downgrade(),
+        let channel1 = new_kobj!({
+            peer: Arc::downgrade(&channel0),
             recv_queue: Mutex::new(VecDeque::new()),
         });
 
         unsafe {
-            channel0.get_mut_unchecked().peer = channel1.downgrade();
+            Arc::get_mut_unchecked(&mut channel0).peer = Arc::downgrade(&channel1);
         }
 
         (channel0, channel1)

@@ -1,13 +1,14 @@
-use alloc::collections::btree_map::BTreeMap;
+use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 use spin::lock_api::Mutex;
 
 use crate::{
-    Errno, Result,
-    object::{Handle, KernelObject, Rights, TypedKObject},
+    Errno, Result, impl_kobj, new_kobj,
+    object::{Handle, KObjectBase, KernelObject, Rights},
 };
 
 pub struct Process {
     inner: Mutex<ProcessInner>,
+    base: KObjectBase,
 }
 
 struct ProcessInner {
@@ -17,11 +18,11 @@ struct ProcessInner {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct HandleId(u32);
 
-impl KernelObject for Process {}
+impl_kobj!(Process);
 
 impl Process {
-    pub fn new() -> TypedKObject<Self> {
-        TypedKObject::new(Self {
+    pub fn new() -> Arc<Self> {
+        new_kobj!({
             inner: Mutex::new(ProcessInner {
                 handles: BTreeMap::new(),
             }),
@@ -52,7 +53,7 @@ impl Process {
         &self,
         handle_id: HandleId,
         desired_rights: Rights,
-    ) -> Result<TypedKObject<T>> {
+    ) -> Result<Arc<T>> {
         let handle = self
             .inner
             .lock()
@@ -63,8 +64,8 @@ impl Process {
         if handle.rights.contains(desired_rights) {
             handle
                 .object
-                .downcast::<T>()
-                .ok_or(Errno::WrongType.no_message())
+                .downcast_arc::<T>()
+                .map_err(|_| Errno::WrongType.no_message())
         } else {
             Err(Errno::AccessDenied.no_message())
         }
@@ -73,12 +74,14 @@ impl Process {
 
 #[cfg(test)]
 mod tests {
+    use crate::object::Upcast;
+
     use super::*;
 
     #[test]
     fn proc_handle() {
         let proc = Process::new();
-        let handle = proc.add_handle(Handle::new(proc.clone().into(), Rights::READ));
+        let handle = proc.add_handle(Handle::new(proc.clone().upcast(), Rights::READ));
         assert_eq!(handle, HandleId(0));
         proc.remove_handle(handle);
     }
