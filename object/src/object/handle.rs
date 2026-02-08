@@ -17,10 +17,7 @@ impl Handle {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        impl_kobj, new_kobj,
-        object::KObjectBase,
-    };
+    use crate::{impl_kobj, new_kobj, object::KObjectBase};
 
     use super::*;
 

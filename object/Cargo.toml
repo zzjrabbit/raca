@@ -7,6 +7,10 @@ edition = "2024"
 bitflags = "2.10.0"
 downcast-rs = { version = "2.0.2", default-features = false, features = ["sync"] }
 errors = { version = "0.1.0", path = "../errors" }
-kernel_hal = { version = "0.1.0", path = "../kernel_hal" }
+kernel_hal = { version = "0.1.0", path = "../kernel_hal", default-features = false }
 log.workspace = true
 spin.workspace = true
+
+[features]
+default = ["libos"]
+libos = ["kernel_hal/libos"]

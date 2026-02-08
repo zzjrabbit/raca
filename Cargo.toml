@@ -14,3 +14,4 @@ lto = "thin"
 [workspace.dependencies]
 log = "0.4.28"
 spin = "0.10.0"
+tokio = { version = "1.49.0", features = ["macros", "rt", "rt-multi-thread"] }
