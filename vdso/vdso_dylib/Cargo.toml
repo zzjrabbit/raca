@@ -1,0 +1,16 @@
+[package]
+name = "vdso_dylib"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+
+[dev-dependencies]
+walkdir = "2.5.0"
+
+[features]
+default = ["libos"]
+libos = []

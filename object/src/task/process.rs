@@ -7,6 +7,9 @@ use crate::{
     task::Thread,
 };
 
+#[allow(unused)]
+static VDSO: &'static [u8] = include_bytes!(concat!("../../../", env!("VDSO_PATH")));
+
 pub struct Process {
     inner: Mutex<ProcessInner>,
     base: KObjectBase,

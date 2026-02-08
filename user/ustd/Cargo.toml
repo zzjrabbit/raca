@@ -1,6 +1,7 @@
 [package]
-name = "errors"
+name = "ustd"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
+vdso = { version = "0.1.0", path = "../../vdso/vdso" }

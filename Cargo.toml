@@ -1,7 +1,11 @@
 [workspace]
-members = ["builder", "loongarch64", "kernel", "object", "kernel_hal", "kernel_hal_bare", "errors", "libos_loader"]
+members = ["builder", "loongarch64", "kernel", "object", "kernel_hal", "kernel_hal_bare", "errors", "libos_loader", "vdso/vdso", "vdso/vdso_dylib", "user/ustd"]
 default-members = ["libos_loader"]
 resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
 
 [profile.dev]
 panic = "abort"

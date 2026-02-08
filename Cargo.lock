@@ -1159,6 +1159,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ustd"
+version = "0.1.0"
+dependencies = [
+ "vdso",
+]
+
+[[package]]
 name = "utf-8"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1179,6 +1186,17 @@ dependencies = [
  "getrandom 0.3.4",
  "js-sys",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "vdso"
+version = "0.1.0"
+
+[[package]]
+name = "vdso_dylib"
+version = "0.1.0"
+dependencies = [
+ "walkdir",
 ]
 
 [[package]]

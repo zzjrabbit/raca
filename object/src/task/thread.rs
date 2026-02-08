@@ -2,7 +2,6 @@ use core::sync::atomic::{AtomicU64, Ordering};
 
 use alloc::sync::Arc;
 use kernel_hal::{platform::TaskContext, task::ThreadState};
-use spin::Mutex;
 
 use crate::{impl_kobj, new_kobj, object::KObjectBase};
 
@@ -17,20 +16,16 @@ impl ThreadId {
 }
 
 pub struct Thread {
-    inner: Mutex<ThreadInner>,
     tid: ThreadId,
     base: KObjectBase,
     ctx: Arc<TaskContext>,
 }
-
-struct ThreadInner {}
 
 impl_kobj!(Thread);
 
 impl Thread {
     pub fn new() -> Arc<Self> {
         new_kobj!({
-            inner: Mutex::new(ThreadInner { }),
             tid: ThreadId::new(),
             ctx: Arc::new(TaskContext::new()),
         })
