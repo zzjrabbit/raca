@@ -82,6 +82,10 @@ impl UserContext {
     pub fn set_tls(&mut self, tls: usize) {
         self.general.fsbase = tls;
     }
+
+    pub fn set_first_arg(&mut self, arg: usize) {
+        self.general.rdi = arg;
+    }
 }
 
 impl UserContext {

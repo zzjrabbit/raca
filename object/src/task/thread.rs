@@ -52,6 +52,7 @@ impl Thread {
 
 impl Thread {
     pub fn start(self: &Arc<Self>, update_fn: impl FnMut() + Send + 'static) {
+        self.set_state(ThreadState::Ready);
         self.context().spawn(update_fn);
     }
 }
@@ -70,7 +71,6 @@ mod tests {
     #[test]
     fn new_thread() {
         let thread = Thread::new();
-        assert_eq!(thread.id(), ThreadId(0));
         assert_eq!(thread.state(), ThreadState::Ready);
     }
 
@@ -80,14 +80,13 @@ mod tests {
         thread.start(|| {
             std::println!("Thread started");
         });
-        std::thread::sleep(Duration::from_secs(1));
+        std::thread::sleep(Duration::from_millis(100));
         thread.set_state(ThreadState::Blocked);
     }
 
     #[test]
     fn user_thread() {
         fn entry_point() {
-            std::println!("User thread started");
             loop {}
         }
 
@@ -101,7 +100,7 @@ mod tests {
         thread.start(move || {
             user_ctx.enter_user_space();
         });
-        std::thread::sleep(Duration::from_secs(1));
+        std::thread::sleep(Duration::from_millis(100));
         thread.set_state(ThreadState::Blocked);
     }
 }

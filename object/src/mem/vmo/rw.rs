@@ -29,6 +29,8 @@ impl Vmo {
     }
 
     pub fn write_bytes(&self, offset: usize, buffer: &[u8]) -> Result<()> {
+        log::info!("Vmo::write_bytes offset={:#x} buffer={:x?}", offset, buffer);
+
         if self.is_iomem() {
             let (iomem, base_offset) = self.get_iomem().unwrap();
             iomem.write_bytes(offset - base_offset, buffer)?;

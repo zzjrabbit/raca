@@ -10,12 +10,14 @@ SECTIONS
 
     .text : {
         *(.text .text.*)
+        . = ALIGN(CONSTANT(MAXPAGESIZE));
     } :text
 
     . = ALIGN(CONSTANT(MAXPAGESIZE));
 
     .rodata : {
         *(.rodata .rodata.*)
+        . = ALIGN(CONSTANT(MAXPAGESIZE));
     } :rodata
 
     /DISCARD/ : {

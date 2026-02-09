@@ -1,24 +1,21 @@
 #![no_std]
 
-#[cfg(feature = "libos")]
-unsafe extern "C" {
-    static SYSCALL_ENTRY: extern "C" fn();
-}
+mod regs;
 
 macro_rules! gen_syscall {
-    ($(fn $name: ident ( $id: expr ) ( $( $arg: ident : $ty: ty ),* ) $(-> $ret: ty)? ; )+) => {
+    ($(fn $name: ident ( $id: expr ) ( $( $arg: ident : $ty: ty ),* ); )+) => {
         $(
             #[cfg(feature = "libos")]
             #[unsafe(no_mangle)]
-            pub extern "C" fn $name( $( $arg : $ty ),* ) $(-> $ret)? {
-                unsafe {
-                    SYSCALL_ENTRY();
-                }
+            pub extern "C" fn $name( $( $arg : $ty ),* ) -> usize {
+                crate::do_syscall!($id $( ,$arg )*)
             }
 
             #[cfg(not(feature = "libos"))]
             #[unsafe(no_mangle)]
-            pub extern "C" fn $name( $( $arg : $ty ),* ) $(-> $ret)? {}
+            pub extern "C" fn $name( $( $arg : $ty ),* ) -> usize {
+                0
+            }
         )+
     };
 }

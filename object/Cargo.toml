@@ -6,6 +6,8 @@ edition.workspace = true
 [dependencies]
 bitflags = "2.10.0"
 downcast-rs = { version = "2.0.2", default-features = false, features = ["sync"] }
+elf = { version = "0.8.0", default-features = false }
+env_logger = "0.11.8"
 errors = { version = "0.1.0", path = "../errors" }
 kernel_hal = { version = "0.1.0", path = "../kernel_hal", default-features = false }
 log.workspace = true

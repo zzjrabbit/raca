@@ -1,17 +1,21 @@
 use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
+use kernel_hal::{arch::task::UserContext, mem::VirtAddr};
 use spin::lock_api::Mutex;
 
 use crate::{
-    Errno, Result, impl_kobj, new_kobj,
+    Errno, Result, impl_kobj,
+    mem::Vmar,
+    new_kobj,
     object::{Handle, KObjectBase, KernelObject, Rights},
     task::Thread,
 };
 
-#[allow(unused)]
-static VDSO: &'static [u8] = include_bytes!(concat!("../../../", env!("VDSO_PATH")));
+mod vdso;
 
 pub struct Process {
     inner: Mutex<ProcessInner>,
+    vmar: Arc<Vmar>,
+    vdso: Arc<Vmar>,
     base: KObjectBase,
 }
 
@@ -27,12 +31,44 @@ impl_kobj!(Process);
 
 impl Process {
     pub fn new() -> Arc<Self> {
-        new_kobj!({
+        let vmar = Vmar::new_root();
+        let vdso = Self::map_vdso(vmar.clone());
+        let new_process = new_kobj!({
             inner: Mutex::new(ProcessInner {
                 threads: Vec::new(),
                 handles: BTreeMap::new(),
             }),
-        })
+            vmar,
+            vdso,
+        });
+        new_process
+    }
+}
+
+impl Process {
+    pub fn root_vmar(&self) -> &Arc<Vmar> {
+        &self.vmar
+    }
+
+    pub fn vdso(&self) -> &Arc<Vmar> {
+        &self.vdso
+    }
+}
+
+impl Process {
+    pub fn start(self: &Arc<Self>, thread: Arc<Thread>, entry: VirtAddr, stack: usize) {
+        self.add_thread(thread.clone());
+
+        let mut user_ctx = UserContext::default();
+        user_ctx.set_ip(entry);
+        user_ctx.set_sp(stack);
+
+        //user_ctx.set_first_arg(self.vdso().base());
+
+        thread.start(move || {
+            log::info!("ENTER USER SPACE");
+            user_ctx.enter_user_space();
+        });
     }
 }
 
@@ -90,9 +126,13 @@ impl Process {
 
 #[cfg(test)]
 mod tests {
+    use kernel_hal::{mem::PageProperty, task::ThreadState};
+
     use crate::object::Upcast;
 
     use super::*;
+
+    extern crate std;
 
     #[test]
     fn proc_handle() {
@@ -100,5 +140,30 @@ mod tests {
         let handle = proc.add_handle(Handle::new(proc.clone().upcast(), Rights::READ));
         assert_eq!(handle, HandleId(0));
         proc.remove_handle(handle);
+    }
+
+    #[test]
+    fn proc_start() {
+        const STACK_SIZE: usize = 8 * 1024 * 1024;
+
+        extern "C" fn user_entry(_vmo_start: VirtAddr) {
+            loop {}
+        }
+
+        let process = Process::new();
+        let thread = Thread::new();
+
+        let stack = process.root_vmar().allocate_child(STACK_SIZE).unwrap();
+        stack
+            .map(0, STACK_SIZE, PageProperty::user_data(), false)
+            .unwrap();
+
+        process.start(
+            thread.clone(),
+            user_entry as *const () as VirtAddr,
+            stack.end(),
+        );
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        thread.set_state(ThreadState::Blocked);
     }
 }

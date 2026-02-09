@@ -21,7 +21,7 @@ use crate::{
 };
 
 pub(super) const PMEM_MAP_VADDR: VirtAddr = 0x8_0000_0000;
-pub(super) const PMEM_SIZE: usize = 0x4000_0000;
+pub(super) const PMEM_SIZE: usize = 500 * 1024 * 1024;
 
 pub(super) static PHYS_MEM: Lazy<Memory> = Lazy::new(|| Memory::new(PMEM_SIZE));
 static MAPPED: RwLock<Vec<MemoryRegion>> = RwLock::new(Vec::new());
@@ -79,8 +79,8 @@ impl GeneralPageTable for LibOsPageTable {
         }
 
         let mut new_regions = Vec::new();
-        for id in to_process {
-            let region = mapped.remove(id);
+        for (processed, &id) in to_process.iter().enumerate() {
+            let region = mapped.remove(id - processed);
 
             let (start, _, end) = region.split_range(vaddr, vaddr + PageSize::Size4K as usize)?;
 
@@ -114,8 +114,8 @@ impl GeneralPageTable for LibOsPageTable {
         }
 
         let mut new_regions = Vec::new();
-        for id in to_process {
-            let region = mapped.remove(id);
+        for (processed, &id) in to_process.iter().enumerate() {
+            let region = mapped.remove(id - processed);
 
             let (start, mut taken, end) =
                 region.split_range(vaddr, vaddr + PageSize::Size4K as usize)?;

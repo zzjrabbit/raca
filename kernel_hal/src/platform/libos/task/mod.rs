@@ -75,7 +75,7 @@ mod tests {
             println!("Task run");
         });
 
-        sleep(Duration::from_secs(1));
+        sleep(Duration::from_millis(100));
         ctx.set_state(ThreadState::Blocked);
     }
 }

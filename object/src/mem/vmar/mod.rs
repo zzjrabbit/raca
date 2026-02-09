@@ -4,7 +4,7 @@ use crate::{Errno, Result};
 use alloc::{sync::Arc, vec::Vec};
 use kernel_hal::mem::{MMUFlags, PageProperty, VirtAddr, VmSpace};
 use kernel_hal::platform::{USER_ASPACE_BASE, USER_ASPACE_SIZE};
-use spin::RwLock;
+use spin::{Lazy, Mutex, RwLock};
 
 use mapping::VmMapping;
 
@@ -18,6 +18,7 @@ mod rw;
 pub struct Vmar {
     vm_space: Arc<VmSpace>,
     inner: RwLock<VmarInner>,
+    lock: Mutex<()>,
     base: VirtAddr,
     size: usize,
     is_root: bool,
@@ -31,16 +32,20 @@ struct VmarInner {
 
 impl Vmar {
     pub fn new_root() -> Arc<Self> {
-        Arc::new(Self {
-            vm_space: Arc::new(VmSpace::new_user()),
-            inner: RwLock::new(VmarInner {
-                vm_mappings: Vec::new(),
-                children: Vec::new(),
-            }),
-            base: USER_ASPACE_BASE,
-            size: USER_ASPACE_SIZE,
-            is_root: true,
-        })
+        static ROOT: Lazy<Arc<Vmar>> = Lazy::new(|| {
+            Arc::new(Vmar {
+                vm_space: Arc::new(VmSpace::new_user()),
+                inner: RwLock::new(VmarInner {
+                    vm_mappings: Vec::new(),
+                    children: Vec::new(),
+                }),
+                lock: Mutex::new(()),
+                base: USER_ASPACE_BASE,
+                size: USER_ASPACE_SIZE,
+                is_root: true,
+            })
+        });
+        ROOT.clone()
     }
 }
 
@@ -64,12 +69,14 @@ impl Vmar {
 
 impl Vmar {
     fn add_child(&self, base: VirtAddr, size: usize) -> Result<Arc<Self>> {
+        log::info!("adding child: base={:#x} size={:#x}", base, size);
         let child = Arc::new(Self {
             vm_space: self.vm_space.clone(),
             inner: RwLock::new(VmarInner {
                 vm_mappings: Vec::new(),
                 children: Vec::new(),
             }),
+            lock: Mutex::new(()),
             base,
             size,
             is_root: false,
@@ -80,6 +87,15 @@ impl Vmar {
     }
 
     pub fn create_child(&self, base: VirtAddr, size: usize) -> Result<Arc<Self>> {
+        if base < self.base || base + size > self.end() {
+            return Err(Errno::InvArg.no_message());
+        }
+
+        let _guard = self.lock.lock();
+        if !self.lock.is_locked() {
+            panic!("Lock optimized");
+        }
+
         if !self.range_is_completely_free(base, size) {
             return Err(Errno::OutOfMemory.no_message());
         }
@@ -88,8 +104,17 @@ impl Vmar {
     }
 
     pub fn allocate_child(&self, size: usize) -> Result<Arc<Self>> {
+        if size == 0 || !size.is_multiple_of(PAGE_SIZE) {
+            return Err(Errno::InvArg.no_message());
+        }
+
         if size > self.size {
             return Err(Errno::OutOfMemory.no_message());
+        }
+
+        let _guard = self.lock.lock();
+        if !self.lock.is_locked() {
+            panic!("Lock optimized");
         }
 
         let mut regions = {
@@ -102,11 +127,12 @@ impl Vmar {
                     inner
                         .children
                         .iter()
-                        .map(|child| (child.base(), child.base() + child.size())),
+                        .map(|child| (child.base(), child.end())),
                 )
                 .collect::<Vec<_>>()
         };
         regions.sort();
+        log::info!("regions: {:x?}", regions);
 
         let mut last_end = self.base();
 
@@ -138,11 +164,17 @@ impl Vmar {
         if !self.contains(addr) {
             return Err(Errno::InvArg.no_message());
         }
-        if !self.range_is_child_free(addr, size) {
-            return Err(Errno::OutOfMemory.no_message());
-        }
         if size == 0 {
             return Vmo::allocate_ram(0);
+        }
+
+        let _guard = self.lock.lock();
+        if !self.lock.is_locked() {
+            panic!("Lock optimized");
+        }
+
+        if !self.range_is_child_free(addr, size) {
+            return Err(Errno::OutOfMemory.no_message());
         }
 
         let aligned = align_down_by_page_size(addr);
@@ -158,6 +190,11 @@ impl Vmar {
             self.insert(vm_mapping)?;
         }
 
+        #[cfg(feature = "libos")]
+        for id in 0..size / PAGE_SIZE {
+            self.handle_page_fault(aligned + id * PAGE_SIZE, prop.flags)?;
+        }
+
         Ok(vmo)
     }
 
@@ -165,6 +202,12 @@ impl Vmar {
         if size == 0 {
             return Ok(());
         }
+
+        let _guard = self.lock.lock();
+        if !self.lock.is_locked() {
+            panic!("Lock optimized");
+        }
+
         if !self.range_is_child_free(addr, size) {
             return Err(Errno::InvArg.with_message("Range is in child vmar."));
         }
@@ -192,6 +235,12 @@ impl Vmar {
         if size == 0 {
             return Ok(());
         }
+
+        let _guard = self.lock.lock();
+        if !self.lock.is_locked() {
+            panic!("Lock optimized");
+        }
+
         if !self.range_is_child_free(addr, size) {
             return Err(Errno::InvArg.with_message("Range is in child vmar."));
         }
@@ -310,6 +359,11 @@ impl Vmar {
             return Err(Errno::InvArg.with_message("Cannot deep clone non-root VMAR!"));
         }
 
+        let _guard = self.lock.lock();
+        if !self.lock.is_locked() {
+            panic!("Lock optimized");
+        }
+
         let mut vm_mappings = Vec::new();
         for mapping in self.inner.write().vm_mappings.iter_mut() {
             vm_mappings.push(mapping.clone()?);
@@ -330,6 +384,7 @@ impl Vmar {
                 vm_mappings,
                 children: Vec::new(),
             }),
+            lock: Mutex::new(()),
             base: self.base,
             size: self.size,
             is_root: true,
@@ -389,22 +444,6 @@ mod tests {
     }
 
     #[test]
-    fn fixed_child() {
-        let vmar = Vmar::new_root();
-        vmar.activate();
-
-        let child = vmar.create_child(0x1000, 4 * 1024).unwrap();
-        child
-            .map(0, 4 * 1024, PageProperty::kernel_code(), true)
-            .unwrap();
-        let address = child.base();
-
-        child.protect(address, 4 * 1024, MMUFlags::WRITE).unwrap();
-
-        child.unmap(address, 4 * 1024).unwrap();
-    }
-
-    #[test]
     fn maps() {
         let vmar = Vmar::new_root();
         vmar.activate();
@@ -435,6 +474,30 @@ mod tests {
 
         child.write_val(address, &42usize).unwrap();
         assert_eq!(child.read_val::<usize>(address).unwrap(), 42);
+
+        child.unmap(address, 4 * 1024).unwrap();
+    }
+
+    #[test]
+    fn read_direct() {
+        env_logger::init();
+        let vmar = Vmar::new_root();
+        vmar.activate();
+
+        let child = vmar.allocate_child(4 * 1024).unwrap();
+        child
+            .map(0, 4 * 1024, PageProperty::user_code(), true)
+            .unwrap();
+        let address = child.base();
+        log::info!("address: {:#x}", address);
+
+        child.protect(address, 4 * 1024, MMUFlags::WRITE).unwrap();
+
+        child.write_val(address, &42usize).unwrap();
+
+        let ptr = address as *const usize;
+
+        assert_eq!(unsafe { ptr.read() }, 42);
 
         child.unmap(address, 4 * 1024).unwrap();
     }
