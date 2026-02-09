@@ -33,15 +33,14 @@ impl Process {
     pub fn new() -> Arc<Self> {
         let vmar = Vmar::new_root();
         let vdso = Self::map_vdso(vmar.clone());
-        let new_process = new_kobj!({
+        new_kobj!({
             inner: Mutex::new(ProcessInner {
                 threads: Vec::new(),
                 handles: BTreeMap::new(),
             }),
             vmar,
             vdso,
-        });
-        new_process
+        })
     }
 }
 

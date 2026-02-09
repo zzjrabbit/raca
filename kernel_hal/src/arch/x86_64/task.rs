@@ -163,6 +163,8 @@ macro_rules! pop_user_fsbase {
     };
 }
 
+/// # Safety
+/// NEVER CALL THIS FUNCTION DIRECTLY
 #[cfg(feature = "libos")]
 #[unsafe(naked)]
 pub unsafe extern "sysv64" fn syscall_fn_entry() {

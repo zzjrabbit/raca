@@ -8,6 +8,12 @@ use crate::{impl_kobj, new_kobj, object::KObjectBase};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ThreadId(u64);
 
+impl Default for ThreadId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ThreadId {
     pub fn new() -> Self {
         static NEXT_ID: AtomicU64 = AtomicU64::new(0);

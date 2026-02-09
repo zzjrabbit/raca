@@ -10,6 +10,7 @@ use object::{
 };
 
 extern "C" fn entry_point(_vdso_ptr: usize) {
+    #[allow(clippy::empty_loop)]
     loop {}
 }
 

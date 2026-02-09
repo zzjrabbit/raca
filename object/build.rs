@@ -18,7 +18,7 @@ fn main() {
     cargo.arg("-Zbuild-std");
 
     cargo.arg("--no-default-features");
-    if let Ok(_) = env::var("CARGO_FEATURE_LIBOS") {
+    if env::var("CARGO_FEATURE_LIBOS").is_ok() {
         cargo.arg("--features").arg("libos");
     }
 

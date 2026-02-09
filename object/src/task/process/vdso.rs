@@ -7,7 +7,7 @@ use crate::{
     task::Process,
 };
 
-static VDSO: &'static [u8] = include_bytes!(concat!("../../../../", env!("VDSO_PATH")));
+static VDSO: &[u8] = include_bytes!(concat!("../../../../", env!("VDSO_PATH")));
 
 impl Process {
     pub fn map_vdso(vmar: Arc<Vmar>) -> Arc<Vmar> {
@@ -57,8 +57,7 @@ impl Process {
                 .section_headers()
                 .unwrap()
                 .into_iter()
-                .filter(|s| s.sh_type == SHT_RELA)
-                .next()
+                .find(|s| s.sh_type == SHT_RELA)
                 .unwrap();
             let relas = vdso.section_data_as_relas(&rela_header).unwrap();
 
