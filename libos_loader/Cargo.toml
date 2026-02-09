@@ -8,4 +8,5 @@ env_logger = "0.11.8"
 kernel_hal = { version = "0.1.0", path = "../kernel_hal" }
 log.workspace = true
 object = { version = "0.1.0", path = "../object" }
+syscall = { version = "0.1.0", path = "../syscall" }
 tokio.workspace = true

@@ -601,6 +601,7 @@ dependencies = [
  "kernel_hal",
  "log",
  "object",
+ "syscall",
  "tokio",
 ]
 
@@ -1025,6 +1026,14 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "syscall"
+version = "0.1.0"
+dependencies = [
+ "kernel_hal",
+ "object",
 ]
 
 [[package]]

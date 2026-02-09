@@ -8,6 +8,7 @@ use object::{
     mem::Vmo,
     task::{Process, Thread},
 };
+use syscall::syscall_handler;
 
 extern "C" fn entry_point(_vdso_ptr: usize) {
     #[allow(clippy::empty_loop)]
@@ -37,6 +38,7 @@ fn main() {
         thread.clone(),
         entry_point as *const () as VirtAddr,
         stack.end(),
+        syscall_handler,
     );
     std::thread::sleep(Duration::from_millis(100));
     thread.set_state(ThreadState::Blocked);

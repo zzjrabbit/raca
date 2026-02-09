@@ -1,5 +1,5 @@
 [workspace]
-members = ["builder", "loongarch64", "kernel", "object", "kernel_hal", "kernel_hal_bare", "errors", "libos_loader", "vdso/vdso", "vdso/vdso_dylib", "user/ustd"]
+members = ["builder", "loongarch64", "kernel", "object", "kernel_hal", "kernel_hal_bare", "errors", "libos_loader", "vdso/vdso", "vdso/vdso_dylib", "user/ustd", "syscall"]
 default-members = ["libos_loader"]
 resolver = "3"
 

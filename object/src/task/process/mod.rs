@@ -55,18 +55,24 @@ impl Process {
 }
 
 impl Process {
-    pub fn start(self: &Arc<Self>, thread: Arc<Thread>, entry: VirtAddr, stack: usize) {
+    pub fn start(
+        self: &Arc<Self>,
+        thread: Arc<Thread>,
+        entry: VirtAddr,
+        stack: usize,
+        syscall_handler: impl Fn(&mut UserContext) + Send + 'static,
+    ) {
         self.add_thread(thread.clone());
 
         let mut user_ctx = UserContext::default();
         user_ctx.set_ip(entry);
         user_ctx.set_sp(stack);
 
-        //user_ctx.set_first_arg(self.vdso().base());
+        user_ctx.set_first_arg(self.vdso().base());
 
         thread.start(move || {
-            log::info!("ENTER USER SPACE");
             user_ctx.enter_user_space();
+            syscall_handler(&mut user_ctx);
         });
     }
 }
@@ -166,6 +172,7 @@ mod tests {
             thread.clone(),
             user_entry as *const () as VirtAddr,
             stack.end(),
+            |_| {},
         );
         std::thread::sleep(std::time::Duration::from_millis(100));
         thread.set_state(ThreadState::Blocked);

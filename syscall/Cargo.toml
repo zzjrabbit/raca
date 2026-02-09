@@ -1,0 +1,12 @@
+[package]
+name = "syscall"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+kernel_hal = { version = "0.1.0", path = "../kernel_hal", default-features = false }
+object = { version = "0.1.0", path = "../object", default-features = false }
+
+[features]
+default = ["libos"]
+libos = ["object/libos", "kernel_hal/libos"]
