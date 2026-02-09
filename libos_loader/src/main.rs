@@ -4,9 +4,12 @@ use kernel_hal::{
     mem::{PageProperty, VirtAddr},
     task::ThreadState,
 };
-use object::task::{Process, Thread};
+use object::{
+    mem::Vmo,
+    task::{Process, Thread},
+};
 
-extern "C" fn entry_point() {
+extern "C" fn entry_point(_vdso_ptr: usize) {
     loop {}
 }
 
@@ -20,7 +23,12 @@ fn main() {
 
     let stack = process.root_vmar().allocate_child(STACK_SIZE).unwrap();
     stack
-        .map(0, STACK_SIZE, PageProperty::user_data(), false)
+        .map(
+            0,
+            &Vmo::allocate_ram(stack.page_count()).unwrap(),
+            PageProperty::user_data(),
+            false,
+        )
         .unwrap();
 
     let thread = Thread::new();

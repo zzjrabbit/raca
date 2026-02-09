@@ -112,6 +112,7 @@ impl Vmo {
 }
 
 impl Vmo {
+    /// Returns the length of the VMO in bytes.
     pub fn len(&self) -> usize {
         match self.inner.as_ref() {
             VmoInner::Ram { frames } => frames.read().len() * PAGE_SIZE,

@@ -3,7 +3,7 @@ use elf::{ElfBytes, abi::PF_X, endian::LittleEndian};
 use kernel_hal::mem::{CachePolicy, MMUFlags, PageProperty, Privilege, VirtAddr};
 
 use crate::{
-    mem::{Vmar, align_up_by_page_size},
+    mem::{PAGE_SIZE, Vmar, Vmo, align_up_by_page_size},
     task::Process,
 };
 
@@ -27,10 +27,13 @@ impl Process {
         for segment in vdso.segments().unwrap() {
             let data = vdso.segment_data(&segment).unwrap();
 
-            let vmo = region
+            let vmo =
+                Vmo::allocate_ram(align_up_by_page_size(segment.p_memsz as usize) / PAGE_SIZE)
+                    .unwrap();
+            region
                 .map(
                     segment.p_vaddr as VirtAddr,
-                    align_up_by_page_size(segment.p_memsz as usize),
+                    &vmo,
                     PageProperty::new(
                         if segment.p_flags & PF_X != 0 {
                             MMUFlags::EXECUTE

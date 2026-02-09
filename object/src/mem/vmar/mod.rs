@@ -65,6 +65,10 @@ impl Vmar {
     pub fn end(&self) -> VirtAddr {
         self.base + self.size
     }
+
+    pub fn page_count(&self) -> usize {
+        self.size / PAGE_SIZE
+    }
 }
 
 impl Vmar {
@@ -87,7 +91,7 @@ impl Vmar {
     }
 
     pub fn create_child(&self, base: VirtAddr, size: usize) -> Result<Arc<Self>> {
-        if base < self.base || base + size > self.end() {
+        if !self.contains_range(base, size) || !size.is_multiple_of(PAGE_SIZE) {
             return Err(Errno::InvArg.no_message());
         }
 
@@ -156,16 +160,17 @@ impl Vmar {
     pub fn map(
         &self,
         offset: usize,
-        size: usize,
+        vmo: &Vmo,
         prop: PageProperty,
         process_overlap: bool,
-    ) -> Result<Vmo> {
+    ) -> Result<()> {
         let addr = self.base() + offset;
-        if !self.contains(addr) {
+        let size = vmo.len();
+        if !self.contains_range(addr, size) {
             return Err(Errno::InvArg.no_message());
         }
         if size == 0 {
-            return Vmo::allocate_ram(0);
+            return Ok(());
         }
 
         let _guard = self.lock.lock();
@@ -178,10 +183,6 @@ impl Vmar {
         }
 
         let aligned = align_down_by_page_size(addr);
-        let size = align_up_by_page_size(size + addr - aligned);
-
-        let vmo = Vmo::allocate_ram(size / PAGE_SIZE)?;
-
         let vm_mapping = VmMapping::new(vmo.clone(), aligned, size, prop, prop.flags);
 
         if process_overlap {
@@ -195,12 +196,15 @@ impl Vmar {
             self.handle_page_fault(aligned + id * PAGE_SIZE, prop.flags)?;
         }
 
-        Ok(vmo)
+        Ok(())
     }
 
     pub fn unmap(&self, addr: VirtAddr, size: usize) -> Result<()> {
         if size == 0 {
             return Ok(());
+        }
+        if !self.contains_range(addr, size) || !size.is_multiple_of(PAGE_SIZE) {
+            return Err(Errno::InvArg.no_message());
         }
 
         let _guard = self.lock.lock();
@@ -234,6 +238,9 @@ impl Vmar {
     pub fn protect(&self, addr: VirtAddr, size: usize, flags: MMUFlags) -> Result<()> {
         if size == 0 {
             return Ok(());
+        }
+        if !self.contains_range(addr, size) || !size.is_multiple_of(PAGE_SIZE) {
+            return Err(Errno::InvArg.with_message("Size is not a multiple of page size."));
         }
 
         let _guard = self.lock.lock();
@@ -397,6 +404,10 @@ impl Vmar {
         address >= self.base && address < self.base + self.size
     }
 
+    pub fn contains_range(&self, address: VirtAddr, size: usize) -> bool {
+        self.contains(address) && self.contains(address + size - 1)
+    }
+
     fn overlap_range(&self, start: VirtAddr, size: usize) -> bool {
         !(start >= self.end() && start + size < self.base())
     }
@@ -450,7 +461,12 @@ mod tests {
 
         let child = vmar.allocate_child(4 * 1024).unwrap();
         child
-            .map(0, 4 * 1024, PageProperty::kernel_code(), true)
+            .map(
+                0,
+                &Vmo::allocate_ram(child.page_count()).unwrap(),
+                PageProperty::kernel_code(),
+                true,
+            )
             .unwrap();
         let address = child.base();
 
@@ -466,7 +482,12 @@ mod tests {
 
         let child = vmar.allocate_child(4 * 1024).unwrap();
         child
-            .map(0, 4 * 1024, PageProperty::kernel_code(), true)
+            .map(
+                0,
+                &Vmo::allocate_ram(child.page_count()).unwrap(),
+                PageProperty::kernel_code(),
+                true,
+            )
             .unwrap();
         let address = child.base();
 
@@ -486,7 +507,12 @@ mod tests {
 
         let child = vmar.allocate_child(4 * 1024).unwrap();
         child
-            .map(0, 4 * 1024, PageProperty::user_code(), true)
+            .map(
+                0,
+                &Vmo::allocate_ram(child.page_count()).unwrap(),
+                PageProperty::user_code(),
+                true,
+            )
             .unwrap();
         let address = child.base();
         log::info!("address: {:#x}", address);

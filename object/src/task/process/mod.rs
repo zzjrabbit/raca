@@ -128,7 +128,7 @@ impl Process {
 mod tests {
     use kernel_hal::{mem::PageProperty, task::ThreadState};
 
-    use crate::object::Upcast;
+    use crate::{mem::Vmo, object::Upcast};
 
     use super::*;
 
@@ -155,7 +155,12 @@ mod tests {
 
         let stack = process.root_vmar().allocate_child(STACK_SIZE).unwrap();
         stack
-            .map(0, STACK_SIZE, PageProperty::user_data(), false)
+            .map(
+                0,
+                &Vmo::allocate_ram(stack.page_count()).unwrap(),
+                PageProperty::user_data(),
+                false,
+            )
             .unwrap();
 
         process.start(
