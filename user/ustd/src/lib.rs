@@ -1,6 +1,7 @@
 #![no_std]
+#![feature(rustc_private)]
 
-use core::slice::from_raw_parts;
+use core::{ffi::c_int, slice::from_raw_parts};
 
 use elf::{
     ElfBytes,
@@ -8,6 +9,8 @@ use elf::{
     endian::LittleEndian,
 };
 use protocol::ProcStartInfo;
+
+extern crate compiler_builtins;
 
 pub fn debug(msg: &str) {
     unsafe {
@@ -86,7 +89,26 @@ pub fn dummy() {
 
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
+    loop {}
+}
+
+#[unsafe(no_mangle)]
+unsafe extern "C" fn memset(s: *mut u8, c: c_int, n: usize) -> *mut u8 {
     unsafe {
-        core::arch::asm!("mov rax, 252", "mov rdi, 8", "syscall", options(noreturn));
+        compiler_builtins::mem::memset(s, c, n)
+    }
+}
+
+#[unsafe(no_mangle)]
+unsafe extern "C" fn memcpy(dest: *mut u8, src: *const u8, n: usize) -> *mut u8 {
+    unsafe {
+        compiler_builtins::mem::memcpy(dest, src, n)
+    }
+}
+
+#[unsafe(no_mangle)]
+unsafe extern "C" fn memcmp(s1: *const u8, s2: *const u8, n: usize) -> i32 {
+    unsafe {
+        compiler_builtins::mem::memcmp(s1, s2, n)
     }
 }

@@ -74,4 +74,5 @@ pub enum Errno {
     NotMapped = 10,
     PageFault = 11,
     TooBig = 12,
+    MapFailed = 13,
 }

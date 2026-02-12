@@ -1,7 +1,7 @@
 use core::sync::atomic::{AtomicU64, Ordering};
 
 use alloc::sync::Arc;
-use kernel_hal::{platform::TaskContext, task::ThreadState};
+use kernel_hal::{platform::HwThread, task::ThreadState};
 
 use crate::{impl_kobj, new_kobj, object::KObjectBase};
 
@@ -24,7 +24,7 @@ impl ThreadId {
 pub struct Thread {
     tid: ThreadId,
     base: KObjectBase,
-    ctx: Arc<TaskContext>,
+    ctx: Arc<HwThread>,
 }
 
 impl_kobj!(Thread);
@@ -33,7 +33,7 @@ impl Thread {
     pub fn new() -> Arc<Self> {
         new_kobj!({
             tid: ThreadId::new(),
-            ctx: Arc::new(TaskContext::new()),
+            ctx: Arc::new(HwThread::new()),
         })
     }
 }
@@ -51,7 +51,7 @@ impl Thread {
         self.ctx.set_state(state);
     }
 
-    pub fn context(&self) -> Arc<TaskContext> {
+    pub fn context(&self) -> Arc<HwThread> {
         self.ctx.clone()
     }
 }

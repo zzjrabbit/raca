@@ -11,11 +11,11 @@ use crate::task::ThreadState;
 static TOKIO_RT: LazyLock<Runtime> = LazyLock::new(|| Runtime::new().unwrap());
 
 #[derive(Default)]
-pub struct TaskContext {
+pub struct HwThread {
     state: Mutex<ThreadState>,
 }
 
-impl TaskContext {
+impl HwThread {
     pub fn new() -> Self {
         Default::default()
     }

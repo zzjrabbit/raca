@@ -6,14 +6,18 @@
         // which might include false-positives (those can be turned off by their names)
         "diagnostics": {
           "experimental": {
-            "enable": true
-          }
+            "enable": true,
+          },
         },
         // Use `-p` instead of `--workspace` for cargo check
         "check": {
-          "workspace": false
-        }
-      }
-    }
-  }
+          "workspace": false,
+        },
+        "cargo": {
+          "target": "loongarch64-unknown-linux-musl",
+          "noDefaultFeatures": true,
+        },
+      },
+    },
+  },
 }

@@ -21,3 +21,8 @@ pub mod platform;
 #[cfg(not(feature = "libos"))]
 #[path = "platform/bare/mod.rs"]
 pub mod platform;
+
+pub fn init() {
+    arch::init();
+    platform::init();
+}

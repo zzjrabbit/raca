@@ -78,6 +78,10 @@ impl UserContext {
         self.general.rsp
     }
 
+    pub fn tls(&self) -> usize {
+        self.general.fsbase
+    }
+
     /// Set tls pointer
     pub fn set_tls(&mut self, tls: usize) {
         self.general.fsbase = tls;

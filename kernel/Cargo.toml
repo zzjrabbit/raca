@@ -7,4 +7,4 @@ edition.workspace = true
 kernel_hal_bare = { version = "0.1.0", path = "../kernel_hal_bare" }
 limine = "0.5.0"
 log.workspace = true
-object = { version = "0.1.0", path = "../object" }
+object = { version = "0.1.0", path = "../object", default-features = false }

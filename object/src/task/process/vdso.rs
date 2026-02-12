@@ -75,11 +75,6 @@ impl Process {
 
         let (vdso_symtab, vdso_strtab) = vdso.dynamic_symbol_table().unwrap().unwrap();
 
-        log::debug!(
-            "syscall entry addr: {:p} self addr: {:p}",
-            kernel_hal::arch::task::syscall_fn_entry as *const (),
-            Self::map_vdso as *const (),
-        );
         for rela in relas {
             let real_addr = if rela.r_type == R_X86_64_RELATIVE {
                 (region.base() as i64 + rela.r_addend) as usize
