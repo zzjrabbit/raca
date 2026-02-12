@@ -8,4 +8,5 @@ fn main() {
         &mut File::create(out_dir.join("syscalls.rs")).unwrap(),
     )
     .unwrap();
+    println!("cargo:rerun-if-changed=../syscalls.rs");
 }

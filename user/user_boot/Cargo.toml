@@ -1,0 +1,7 @@
+[package]
+name = "user_boot"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ustd = { version = "0.1.0", path = "../ustd" }

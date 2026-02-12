@@ -86,6 +86,10 @@ impl UserContext {
     pub fn set_first_arg(&mut self, arg: usize) {
         self.general.rdi = arg;
     }
+
+    pub fn set_second_arg(&mut self, arg: usize) {
+        self.general.rsi = arg;
+    }
 }
 
 impl UserContext {
@@ -166,6 +170,9 @@ macro_rules! pop_user_fsbase {
 /// # Safety
 /// NEVER CALL THIS FUNCTION DIRECTLY
 #[cfg(feature = "libos")]
+/*pub unsafe extern "sysv64" fn syscall_fn_entry() {
+    loop {}
+}*/
 #[unsafe(naked)]
 pub unsafe extern "sysv64" fn syscall_fn_entry() {
     naked_asm!(

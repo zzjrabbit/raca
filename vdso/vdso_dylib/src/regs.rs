@@ -1,7 +1,18 @@
 #[cfg(feature = "libos")]
-unsafe extern "C" {
-    #[doc(hidden)]
-    pub static SYSCALL_ENTRY: extern "C" fn() -> usize;
+#[doc(hidden)]
+#[unsafe(link_section = ".rodata")]
+#[unsafe(no_mangle)]
+pub static SYSCALL_ENTRY: extern "C" fn() -> usize = empty;
+
+#[cfg(feature = "libos")]
+extern "C" fn empty() -> usize {
+    0
+}
+
+#[cfg(feature = "libos")]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn syscall() -> usize {
+    SYSCALL_ENTRY()
 }
 
 #[cfg(target_arch = "x86_64")]

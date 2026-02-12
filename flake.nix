@@ -23,8 +23,7 @@
             llvmPackages.bintools
             (rust-bin.fromRustupToolchainFile ./rust-toolchain.toml)
             qemu
-            zstd
-            zstd.dev
+            lldb
           ];
 
           # https://github.com/rust-lang/rust-bindgen#environment-variables

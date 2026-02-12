@@ -11,4 +11,5 @@ fn main() {
 
     println!("cargo:rustc-link-arg=-T./vdso/vdso_dylib/linker.ld");
     println!("cargo:rerun-if-changed=linker.ld");
+    println!("cargo:rerun-if-changed=../syscalls.rs");
 }

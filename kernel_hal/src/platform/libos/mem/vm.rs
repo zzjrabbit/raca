@@ -55,7 +55,6 @@ impl GeneralPageTable for LibOsPageTable {
         paddr: PhysAddr,
         property: PageProperty,
     ) -> Result<(), errors::Error> {
-        log::debug!("mapping page {:#x} to {:#x}", page.vaddr, paddr);
         PHYS_MEM.mmap(page.vaddr, page.size as usize, paddr, property);
         MAPPED.write().push(MemoryRegion::new(
             page.vaddr,

@@ -1,5 +1,9 @@
 use alloc::sync::Arc;
-use elf::{ElfBytes, abi::PF_X, endian::LittleEndian};
+use elf::{
+    ElfBytes,
+    abi::{PF_X, R_X86_64_RELATIVE},
+    endian::LittleEndian,
+};
 use kernel_hal::mem::{CachePolicy, MMUFlags, PageProperty, Privilege, VirtAddr};
 
 use crate::{
@@ -10,7 +14,16 @@ use crate::{
 static VDSO: &[u8] = include_bytes!(concat!("../../../../", env!("VDSO_PATH")));
 
 impl Process {
-    pub fn map_vdso(vmar: Arc<Vmar>) -> Arc<Vmar> {
+    pub fn map_vdso(vmar: Arc<Vmar>) -> (VirtAddr, Arc<Vmar>) {
+        let vdso_len = VDSO.len();
+        let aligned_vdso_len = align_up_by_page_size(vdso_len);
+        let vdso_elf = vmar.allocate_child(aligned_vdso_len).unwrap();
+        let vmo = Vmo::allocate_ram(vdso_elf.page_count()).unwrap();
+        vmo.write_bytes(0, VDSO).unwrap();
+        vdso_elf
+            .map(0, &vmo, PageProperty::user_data(), false)
+            .unwrap();
+
         let vdso = ElfBytes::<LittleEndian>::minimal_parse(VDSO).unwrap();
 
         let region = vmar
@@ -49,29 +62,53 @@ impl Process {
             vmo.write_bytes(0, data).unwrap();
         }
 
-        #[cfg(feature = "libos")]
-        {
-            use elf::abi::SHT_RELA;
+        use elf::abi::SHT_RELA;
 
-            let rela_header = vdso
-                .section_headers()
-                .unwrap()
-                .into_iter()
-                .find(|s| s.sh_type == SHT_RELA)
+        let relas = vdso
+            .section_headers()
+            .unwrap()
+            .into_iter()
+            .filter(|s| s.sh_type == SHT_RELA)
+            .map(|s| vdso.section_data_as_relas(&s))
+            .flatten()
+            .flatten();
+
+        let (vdso_symtab, vdso_strtab) = vdso.dynamic_symbol_table().unwrap().unwrap();
+
+        log::debug!(
+            "syscall entry addr: {:p} self addr: {:p}",
+            kernel_hal::arch::task::syscall_fn_entry as *const (),
+            Self::map_vdso as *const (),
+        );
+        for rela in relas {
+            let real_addr = if rela.r_type == R_X86_64_RELATIVE {
+                (region.base() as i64 + rela.r_addend) as usize
+            } else {
+                #[cfg(not(feature = "libos"))]
+                panic!("Unknown relocation type found in vDSO!");
+                #[cfg(feature = "libos")]
+                {
+                    use kernel_hal::arch::task::syscall_fn_entry;
+
+                    (syscall_fn_entry as *const () as i64 + rela.r_addend) as usize
+                }
+            };
+            let offset = rela.r_offset;
+            region
+                .write_val(offset as usize + region.base(), &real_addr)
                 .unwrap();
-            let relas = vdso.section_data_as_relas(&rela_header).unwrap();
 
-            for rela in relas {
-                use kernel_hal::arch::task::syscall_fn_entry;
+            let symbol = vdso_symtab.get(rela.r_sym as usize).unwrap();
+            let symbol_name = vdso_strtab.get(symbol.st_name as usize).unwrap();
 
-                let real_addr = (syscall_fn_entry as *const () as i64 + rela.r_addend) as usize;
-                let offset = rela.r_offset;
-                region
-                    .write_val(offset as usize + region.base(), &real_addr)
-                    .unwrap();
-            }
+            log::debug!(
+                "plt: offset={:#x} addr={:#x} name={}",
+                offset,
+                real_addr,
+                symbol_name
+            );
         }
 
-        region
+        (region.base(), vdso_elf)
     }
 }

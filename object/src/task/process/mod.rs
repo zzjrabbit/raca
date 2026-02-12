@@ -16,6 +16,7 @@ pub struct Process {
     inner: Mutex<ProcessInner>,
     vmar: Arc<Vmar>,
     vdso: Arc<Vmar>,
+    vdso_load_base: VirtAddr,
     base: KObjectBase,
 }
 
@@ -32,7 +33,7 @@ impl_kobj!(Process);
 impl Process {
     pub fn new() -> Arc<Self> {
         let vmar = Vmar::new_root();
-        let vdso = Self::map_vdso(vmar.clone());
+        let (vdso_load_base, vdso) = Self::map_vdso(vmar.clone());
         new_kobj!({
             inner: Mutex::new(ProcessInner {
                 threads: Vec::new(),
@@ -40,6 +41,7 @@ impl Process {
             }),
             vmar,
             vdso,
+            vdso_load_base,
         })
     }
 }
@@ -52,6 +54,10 @@ impl Process {
     pub fn vdso(&self) -> &Arc<Vmar> {
         &self.vdso
     }
+
+    pub fn vdso_load_base(&self) -> VirtAddr {
+        self.vdso_load_base
+    }
 }
 
 impl Process {
@@ -60,7 +66,8 @@ impl Process {
         thread: Arc<Thread>,
         entry: VirtAddr,
         stack: usize,
-        syscall_handler: impl Fn(&mut UserContext) + Send + 'static,
+        initializer: impl FnOnce(&mut UserContext),
+        syscall_handler: impl Fn(&Arc<Self>, &mut UserContext) + Send + 'static,
     ) {
         self.add_thread(thread.clone());
 
@@ -68,11 +75,14 @@ impl Process {
         user_ctx.set_ip(entry);
         user_ctx.set_sp(stack);
 
-        user_ctx.set_first_arg(self.vdso().base());
+        initializer(&mut user_ctx);
 
+        let process = self.clone();
         thread.start(move || {
+            log::debug!("into user space");
             user_ctx.enter_user_space();
-            syscall_handler(&mut user_ctx);
+            log::debug!("user space out");
+            syscall_handler(&process, &mut user_ctx);
         });
     }
 }
@@ -173,6 +183,7 @@ mod tests {
             user_entry as *const () as VirtAddr,
             stack.end(),
             |_| {},
+            |_, _| {},
         );
         std::thread::sleep(std::time::Duration::from_millis(100));
         thread.set_state(ThreadState::Blocked);

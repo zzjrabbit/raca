@@ -1,18 +1,12 @@
+#![feature(exit_status_error)]
+
 use std::{env, process::Command};
 
 fn main() {
-    let mut cargo = Command::new("cargo");
+    /*let mut cargo = Command::new("cargo");
     cargo.arg("build").arg("--release");
 
     cargo.arg("-p").arg("vdso_dylib");
-
-    let target_triple = env::var("TARGET").unwrap();
-    let target_arch = target_triple.split("-").next().unwrap();
-    let target = match target_arch {
-        "x86_64" => "x86_64-unknown-linux-none",
-        "loongarch64" => "loongarch64-unknown-linux-musl",
-        _ => panic!("Unsupported target architecture: {}", target_arch),
-    };
     cargo.arg("--target").arg(target);
 
     cargo.arg("-Zbuild-std");
@@ -22,8 +16,22 @@ fn main() {
         cargo.arg("--features").arg("libos");
     }
 
-    cargo.status().expect("Failed to build vdso!");
+    cargo
+        .spawn()
+        .unwrap()
+        .wait()
+        .unwrap()
+        .exit_ok()
+        .expect("Failed to build vdso!");*/
 
-    let vdso_path = format!("target/{}/release/libvdso_dylib.so", target);
+    let target_triple = env::var("TARGET").unwrap();
+    let target_arch = target_triple.split("-").next().unwrap();
+    let target = match target_arch {
+        "x86_64" => "x86_64-unknown-linux-none",
+        "loongarch64" => "loongarch64-unknown-linux-musl",
+        _ => panic!("Unsupported target architecture: {}", target_arch),
+    };
+
+    let vdso_path = format!("target/{}/debug/libvdso_dylib.so", target);
     println!("cargo::rustc-env=VDSO_PATH={}", vdso_path);
 }

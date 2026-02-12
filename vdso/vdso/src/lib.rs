@@ -9,3 +9,7 @@ macro_rules! gen_syscall {
 }
 
 include!(concat!(env!("OUT_DIR"), "/syscalls.rs"));
+
+unsafe extern "C" {
+    pub fn syscall() -> usize;
+}
