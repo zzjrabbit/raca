@@ -15,8 +15,8 @@ The current version is deeply inspired by zircon.
 ### Kernel Objects
 - [ ] Process
 - [ ] Channel
-- [ ] Vmo
-- [ ] Vmar
+- [x] Vmo
+- [x] Vmar
 - [ ] Driver Development Kit
 - [ ] Signal
 
