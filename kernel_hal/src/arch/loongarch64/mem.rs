@@ -29,10 +29,7 @@ pub fn current_page_table() -> OffsetPageTable<'static> {
     let higher_half = phys_to_virt(higher_half as PhysAddr) as *mut PageTable;
 
     let physical_memory_offset = phys_to_virt(0) as u64;
-    let page_table = unsafe {
-        OffsetPageTable::new(&mut *lower_half, &mut *higher_half, physical_memory_offset)
-    };
-    page_table
+    unsafe { OffsetPageTable::new(&mut *lower_half, &mut *higher_half, physical_memory_offset) }
 }
 
 fn kernel_property_converter(property: crate::mem::PageProperty) -> PageProperty {

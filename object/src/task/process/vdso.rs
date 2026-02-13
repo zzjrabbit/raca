@@ -69,8 +69,7 @@ impl Process {
             .unwrap()
             .into_iter()
             .filter(|s| s.sh_type == SHT_RELA)
-            .map(|s| vdso.section_data_as_relas(&s))
-            .flatten()
+            .flat_map(|s| vdso.section_data_as_relas(&s))
             .flatten();
 
         let (vdso_symtab, vdso_strtab) = vdso.dynamic_symbol_table().unwrap().unwrap();

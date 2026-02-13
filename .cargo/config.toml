@@ -9,6 +9,8 @@ linker = "rust-lld"
 rustflags = ["-C", "target-feature=-lasx,-lsx"]
 
 [alias]
-krun = "run --package builder -- run"
-ktest = "run --package builder -- test"
-khelp = "run --package builder -- help"
+k = "run --package builder --"
+krun = "k run"
+ktest = "k test"
+khelp = "k help"
+kclippy = "k clippy"

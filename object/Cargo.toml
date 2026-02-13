@@ -13,5 +13,5 @@ log.workspace = true
 spin.workspace = true
 
 [features]
-default = ["libos"]
+default = []
 libos = ["kernel_hal/libos"]

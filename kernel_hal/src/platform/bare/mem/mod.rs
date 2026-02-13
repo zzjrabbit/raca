@@ -1,5 +1,4 @@
 use limine::request::{HhdmRequest, MemoryMapRequest};
-use loongarch64::registers::init_pwc;
 use spin::Lazy;
 
 pub(crate) use frame::FRAME_ALLOCATOR;
@@ -19,10 +18,6 @@ pub const fn align_down_by_page_size(addr: usize) -> usize {
 
 pub const fn align_up_by_page_size(addr: usize) -> usize {
     align_down_by_page_size(addr + PAGE_SIZE - 1)
-}
-
-pub(super) fn init() {
-    init_pwc();
 }
 
 #[used]

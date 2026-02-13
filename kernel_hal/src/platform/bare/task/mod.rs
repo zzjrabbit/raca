@@ -4,6 +4,12 @@ use crate::task::ThreadState;
 
 pub struct HwThread {}
 
+impl Default for HwThread {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HwThread {
     pub fn new() -> Self {
         Self {}

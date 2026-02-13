@@ -1,4 +1,4 @@
-use std::arch::naked_asm;
+use core::arch::naked_asm;
 
 /// User space context
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]

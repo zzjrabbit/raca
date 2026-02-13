@@ -1,5 +1,6 @@
 use std::{collections::BTreeMap, process::Command};
 
+#[derive(Clone)]
 pub struct CargoOpts {
     package: String,
     action: String,

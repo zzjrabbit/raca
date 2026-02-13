@@ -31,7 +31,7 @@ macro_rules! first_context_switch_asm {
 }
 
 #[unsafe(naked)]
-pub extern "C" fn context_switch(nxt: *const TaskContext, cur: *mut TaskContext) {
+pub unsafe extern "C" fn context_switch(nxt: *const TaskContext, cur: *mut TaskContext) {
     core::arch::naked_asm!(
         "st.d  $sp, $a1, 0x0",
         "st.d  $fp, $a1, 0x8",
@@ -50,7 +50,7 @@ pub extern "C" fn context_switch(nxt: *const TaskContext, cur: *mut TaskContext)
 }
 
 #[unsafe(naked)]
-pub extern "C" fn first_context_switch(nxt: *const TaskContext) {
+pub unsafe extern "C" fn first_context_switch(nxt: *const TaskContext) {
     core::arch::naked_asm!(first_context_switch_asm!())
 }
 

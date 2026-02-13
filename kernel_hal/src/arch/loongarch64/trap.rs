@@ -28,5 +28,5 @@ pub struct TrapFrame {
 extern "C" fn trap_handler(_f: &mut TrapFrame) {}
 
 pub fn init() {
-    ExceptionEntry.write(trap_handler as *const () as u64);
+    ExceptionEntry.write(trap_entry as *const () as u64);
 }

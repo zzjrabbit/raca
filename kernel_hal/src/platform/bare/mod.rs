@@ -8,6 +8,4 @@ pub use task::*;
 mod mem;
 mod task;
 
-pub(crate) fn init() {
-    mem::init();
-}
+pub(crate) fn init() {}

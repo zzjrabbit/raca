@@ -3,7 +3,7 @@
 use anyhow::Result;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
-use crate::cli::{do_run, do_test};
+use crate::cli::{do_clippy, do_run, do_test};
 
 mod cargo;
 mod cli;
@@ -23,6 +23,8 @@ enum SubCommands {
     Run(RunArgs),
     /// Test object and kernel_hal
     Test,
+    /// Run cargo clippy for object.
+    Clippy,
 }
 
 #[derive(Args)]
@@ -71,5 +73,6 @@ fn main() -> Result<()> {
     match cli.command {
         SubCommands::Run(args) => do_run(args),
         SubCommands::Test => do_test(),
+        SubCommands::Clippy => do_clippy(),
     }
 }
