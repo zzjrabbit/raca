@@ -12,5 +12,5 @@ crate-type = ["cdylib"]
 walkdir = "2.5.0"
 
 [features]
-default = ["libos"]
+default = []
 libos = []

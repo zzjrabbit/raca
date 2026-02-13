@@ -81,11 +81,7 @@ extern "C" fn _start(info: *const ProcStartInfo) -> ! {
     loop {}
 }
 
-pub fn dummy() {
-    unsafe {
-        vdso::syscall();
-    }
-}
+pub fn dummy() {}
 
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
@@ -94,21 +90,15 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
 
 #[unsafe(no_mangle)]
 unsafe extern "C" fn memset(s: *mut u8, c: c_int, n: usize) -> *mut u8 {
-    unsafe {
-        compiler_builtins::mem::memset(s, c, n)
-    }
+    unsafe { compiler_builtins::mem::memset(s, c, n) }
 }
 
 #[unsafe(no_mangle)]
 unsafe extern "C" fn memcpy(dest: *mut u8, src: *const u8, n: usize) -> *mut u8 {
-    unsafe {
-        compiler_builtins::mem::memcpy(dest, src, n)
-    }
+    unsafe { compiler_builtins::mem::memcpy(dest, src, n) }
 }
 
 #[unsafe(no_mangle)]
 unsafe extern "C" fn memcmp(s1: *const u8, s2: *const u8, n: usize) -> i32 {
-    unsafe {
-        compiler_builtins::mem::memcmp(s1, s2, n)
-    }
+    unsafe { compiler_builtins::mem::memcmp(s1, s2, n) }
 }

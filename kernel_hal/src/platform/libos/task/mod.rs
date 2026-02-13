@@ -42,11 +42,11 @@ impl HwThread {
 }
 
 struct ThreadFuture {
-    ctx: Arc<TaskContext>,
+    ctx: Arc<HwThread>,
 }
 
 impl ThreadFuture {
-    fn new(ctx: Arc<TaskContext>) -> Self {
+    fn new(ctx: Arc<HwThread>) -> Self {
         Self { ctx }
     }
 }
@@ -69,7 +69,7 @@ mod tests {
 
     #[test]
     fn test_task_context() {
-        let ctx = Arc::new(TaskContext::new());
+        let ctx = Arc::new(HwThread::new());
 
         ctx.spawn(|| {
             println!("Task run");

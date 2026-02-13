@@ -36,7 +36,6 @@
           '';
           
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (buildInputs ++ nativeBuildInputs);
-
           
           # Add glibc, clang, glib, and other headers to bindgen search path
           BINDGEN_EXTRA_CLANG_ARGS =

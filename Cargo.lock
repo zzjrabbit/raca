@@ -981,7 +981,6 @@ dependencies = [
  "elf",
  "protocol",
  "vdso",
- "vdso_dylib",
 ]
 
 [[package]]
