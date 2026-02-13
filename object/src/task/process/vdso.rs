@@ -82,7 +82,7 @@ impl Process {
                 panic!("Unknown relocation type found in vDSO!");
                 #[cfg(feature = "libos")]
                 {
-                    use kernel_hal::arch::task::syscall_fn_entry;
+                    use kernel_hal::platform::task::syscall_fn_entry;
 
                     (syscall_fn_entry as *const () as i64 + rela.r_addend) as usize
                 }

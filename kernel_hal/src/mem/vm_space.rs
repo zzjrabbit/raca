@@ -4,9 +4,11 @@ use alloc::sync::Arc;
 use errors::{Errno, Result};
 use spin::{Lazy, RwLock};
 
-use crate::mem::{GeneralPageTable, Page, PageProperty, PageSize, PhysicalMemory, VirtAddr};
-use crate::platform::phys_to_virt;
-use crate::{io::IoMem, platform::kernel_page_table};
+use crate::io::IoMem;
+use crate::mem::{
+    GeneralPageTable, Page, PageProperty, PageSize, PhysicalMemory, VirtAddr, kernel_page_table,
+    phys_to_virt,
+};
 
 pub struct VmSpace {
     page_table: Arc<RwLock<dyn GeneralPageTable>>,

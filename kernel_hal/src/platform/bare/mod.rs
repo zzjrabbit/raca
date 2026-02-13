@@ -1,17 +1,16 @@
-pub use crate::arch::mem::{
-    KERNEL_ASPACE_BASE, KERNEL_ASPACE_SIZE, USER_ASPACE_BASE, USER_ASPACE_SIZE,
-    current_page_table as kernel_page_table,
-};
+pub use crate::arch::{idle_ins, idle_loop};
 pub(crate) use acpi::ACPI;
 pub use logger::_print;
-pub use mem::*;
-pub use task::*;
 
 mod acpi;
 mod logger;
-mod mem;
+pub(crate) mod mem;
 mod panic;
-mod task;
+pub(crate) mod task;
+
+pub mod trap {
+    pub use crate::arch::trap::{disable_int, enable_int};
+}
 
 pub(crate) fn init() {
     mem::init();

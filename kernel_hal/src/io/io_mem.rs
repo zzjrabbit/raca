@@ -3,10 +3,7 @@ use core::ops::Range;
 use alloc::sync::Arc;
 use errors::Error;
 
-use crate::{
-    mem::{Pod, VirtAddr, VmSpace},
-    platform::phys_to_virt,
-};
+use crate::mem::{Pod, VirtAddr, VmSpace, phys_to_virt};
 
 #[derive(Debug)]
 pub struct IoMem {

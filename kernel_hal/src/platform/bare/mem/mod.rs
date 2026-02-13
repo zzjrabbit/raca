@@ -1,22 +1,13 @@
 use limine::request::{HhdmRequest, MemoryMapRequest};
 use spin::Lazy;
 
-pub(crate) use frame::FRAME_ALLOCATOR;
-
 use crate::mem::{PageSize, PhysAddr, VirtAddr};
+pub(crate) use frame::FRAME_ALLOCATOR;
 
 mod frame;
 mod heap;
 
 pub const PAGE_SIZE: usize = PageSize::Size4K as usize;
-
-pub const fn align_down_by_page_size(addr: usize) -> usize {
-    addr / PAGE_SIZE * PAGE_SIZE
-}
-
-pub const fn align_up_by_page_size(addr: usize) -> usize {
-    align_down_by_page_size(addr + PAGE_SIZE - 1)
-}
 
 #[used]
 #[unsafe(link_section = ".requests")]

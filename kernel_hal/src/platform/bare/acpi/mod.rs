@@ -2,7 +2,7 @@ use acpi::{AcpiError, AcpiTables, aml::Interpreter, platform::AcpiPlatform, sdt:
 use limine::request::RsdpRequest;
 use spin::lazy::Lazy;
 
-use crate::{mem::VirtAddr, platform::virt_to_phys};
+use crate::{mem::VirtAddr, platform::mem::virt_to_phys};
 use handler::AcpiHandler;
 
 mod handler;

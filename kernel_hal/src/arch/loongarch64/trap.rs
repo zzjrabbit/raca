@@ -1,6 +1,9 @@
 use core::arch::global_asm;
 
-use loongarch64::{instructions::interrupt, registers::{ExceptionEntry, TimerConfigBuilder}};
+use loongarch64::{
+    instructions::interrupt,
+    registers::{ExceptionEntry, TimerConfigBuilder},
+};
 
 use crate::arch::task::{GeneralRegs, UserContext};
 

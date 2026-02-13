@@ -1,11 +1,9 @@
 use loongarch64::registers::init_pwc;
 
-pub use trap::{disable_int, enable_int};
-
 pub mod mem;
-pub(crate) mod serial;
+pub mod serial;
 pub mod task;
-mod trap;
+pub mod trap;
 
 pub(crate) fn init() {
     init_pwc();

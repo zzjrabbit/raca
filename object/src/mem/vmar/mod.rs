@@ -3,7 +3,7 @@ use core::ops::Range;
 use crate::{Errno, Result};
 use alloc::{sync::Arc, vec::Vec};
 use kernel_hal::mem::{MMUFlags, PageProperty, VirtAddr, VmSpace};
-use kernel_hal::platform::{USER_ASPACE_BASE, USER_ASPACE_SIZE};
+use kernel_hal::mem::{USER_ASPACE_BASE, USER_ASPACE_SIZE};
 use spin::{Lazy, Mutex, RwLock};
 
 use mapping::VmMapping;

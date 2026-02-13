@@ -1,8 +1,8 @@
 use errors::{Errno, Result};
 
 use crate::{
-    mem::{PageSize, PhysAddr},
-    platform::{FRAME_ALLOCATOR, phys_to_virt},
+    mem::{PageSize, PhysAddr, phys_to_virt},
+    platform::mem::FRAME_ALLOCATOR,
 };
 
 pub struct PhysicalMemoryAllocOptions {

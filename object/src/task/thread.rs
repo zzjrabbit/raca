@@ -1,7 +1,7 @@
 use core::sync::atomic::{AtomicU64, Ordering};
 
 use alloc::sync::Arc;
-use kernel_hal::{platform::HwThread, task::ThreadState};
+use kernel_hal::task::{HwThread, ThreadState};
 
 use crate::{impl_kobj, new_kobj, object::KObjectBase};
 
@@ -66,7 +66,7 @@ impl Thread {
 #[cfg(test)]
 mod tests {
     use alloc::vec;
-    use kernel_hal::arch::task::UserContext;
+    use kernel_hal::task::UserContext;
 
     use super::*;
     use core::time::Duration;

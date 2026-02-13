@@ -11,6 +11,6 @@ static BASE_REVISION: BaseRevision = BaseRevision::with_revision(4);
 pub extern "C" fn kmain() -> ! {
     kernel_hal::init();
     log::info!("kernel initialized");
-    kernel_hal::arch::enable_int();
-    kernel_hal::arch::idle_loop();
+    kernel_hal::platform::trap::enable_int();
+    kernel_hal::platform::idle_loop();
 }

@@ -1,3 +1,6 @@
+pub use crate::arch::task::UserContext;
+pub use crate::platform::task::HwThread;
+
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ThreadState {
     Running,

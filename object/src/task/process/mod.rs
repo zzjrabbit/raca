@@ -1,5 +1,5 @@
 use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
-use kernel_hal::{arch::task::UserContext, mem::VirtAddr};
+use kernel_hal::{mem::VirtAddr, task::UserContext};
 use spin::lock_api::Mutex;
 
 use crate::{

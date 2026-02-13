@@ -6,6 +6,7 @@ use std::{
 
 use tokio::runtime::Runtime;
 
+pub use crate::arch::task::syscall_fn_entry;
 use crate::task::ThreadState;
 
 static TOKIO_RT: LazyLock<Runtime> = LazyLock::new(|| Runtime::new().unwrap());

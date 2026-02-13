@@ -8,11 +8,11 @@ pub mod task;
 
 #[cfg(target_arch = "x86_64")]
 #[path = "arch/x86_64/mod.rs"]
-pub mod arch;
+mod arch;
 
 #[cfg(target_arch = "loongarch64")]
 #[path = "arch/loongarch64/mod.rs"]
-pub mod arch;
+mod arch;
 
 #[cfg(feature = "libos")]
 #[path = "platform/libos/mod.rs"]

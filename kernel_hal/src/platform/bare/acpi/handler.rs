@@ -3,7 +3,7 @@ use acpi::{PciAddress, PhysicalMapping};
 use core::ptr::NonNull;
 
 use crate::mem::PhysAddr;
-use crate::platform::phys_to_virt;
+use crate::mem::phys_to_virt;
 
 #[derive(Clone, Copy)]
 pub struct AcpiHandler;

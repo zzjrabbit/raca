@@ -12,8 +12,11 @@ use loongarch64::{
 use spin::RwLock;
 
 use crate::{
-    mem::{BitmapFrameAllocator, GeneralPageTable, MMUFlags, PhysAddr, Privilege, VirtAddr},
-    platform::{FRAME_ALLOCATOR, phys_to_virt, virt_to_phys},
+    mem::{
+        BitmapFrameAllocator, GeneralPageTable, MMUFlags, PhysAddr, Privilege, VirtAddr,
+        phys_to_virt, virt_to_phys,
+    },
+    platform::mem::FRAME_ALLOCATOR,
 };
 
 pub const KERNEL_ASPACE_BASE: usize = 0xffff_ff02_0000_0000;
