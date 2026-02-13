@@ -13,10 +13,7 @@ use tempfile::NamedTempFile;
 
 type Files = BTreeMap<String, PathBuf>;
 
-pub fn build() -> Result<PathBuf> {
-    let env_path = env!("CARGO_BIN_FILE_KERNEL");
-    let kernel_path = Path::new(&env_path);
-
+pub fn build(kernel_path: &Path) -> Result<PathBuf> {
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
     let assets_dir = manifest_dir.join("assets");
 

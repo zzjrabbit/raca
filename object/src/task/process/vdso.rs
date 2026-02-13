@@ -11,11 +11,7 @@ use crate::{
     task::Process,
 };
 
-static VDSO: &[u8] = include_bytes!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../",
-    env!("VDSO_DYLIB_PATH")
-));
+static VDSO: &[u8] = include_bytes!(env!("VDSO_DYLIB_PATH"));
 
 impl Process {
     pub fn map_vdso(vmar: Arc<Vmar>) -> (VirtAddr, Arc<Vmar>) {

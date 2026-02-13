@@ -9,5 +9,6 @@ linker = "rust-lld"
 rustflags = ["-C", "target-feature=-lasx,-lsx"]
 
 [alias]
-testo = "test --package object"
-testh = "test --package kernel_hal"
+krun = "run --package builder -- run"
+ktest = "run --package builder -- test"
+khelp = "run --package builder -- help"
