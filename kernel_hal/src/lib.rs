@@ -25,4 +25,5 @@ pub mod platform;
 pub fn init() {
     arch::init();
     platform::init();
+    arch::init_after_heap();
 }

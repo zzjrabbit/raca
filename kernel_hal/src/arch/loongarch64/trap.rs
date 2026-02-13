@@ -1,6 +1,6 @@
 use core::arch::global_asm;
 
-use loongarch64::registers::ExceptionEntry;
+use loongarch64::{instructions::interrupt, registers::{ExceptionEntry, TimerConfigBuilder}};
 
 use crate::arch::task::{GeneralRegs, UserContext};
 
@@ -25,8 +25,23 @@ pub struct TrapFrame {
 }
 
 #[unsafe(no_mangle)]
-extern "C" fn trap_handler(_f: &mut TrapFrame) {}
+extern "C" fn trap_handler(f: &mut TrapFrame) {
+    log::error!("Trap: {:#x?}", f);
+}
 
 pub fn init() {
+    TimerConfigBuilder::new()
+        .initial_value(1000000 >> 2)
+        .set_enabled(true)
+        .set_periodic(true)
+        .done();
     ExceptionEntry.write(trap_entry as *const () as u64);
+}
+
+pub fn enable_int() {
+    interrupt::enable();
+}
+
+pub fn disable_int() {
+    interrupt::disable();
 }

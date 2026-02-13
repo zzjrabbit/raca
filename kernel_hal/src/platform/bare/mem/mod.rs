@@ -3,12 +3,10 @@ use spin::Lazy;
 
 pub(crate) use frame::FRAME_ALLOCATOR;
 
-use crate::mem::PageSize;
+use crate::mem::{PageSize, PhysAddr, VirtAddr};
 
 mod frame;
-
-pub type PhysAddr = usize;
-pub type VirtAddr = usize;
+mod heap;
 
 pub const PAGE_SIZE: usize = PageSize::Size4K as usize;
 
@@ -37,4 +35,8 @@ pub fn phys_to_virt(physical_address: PhysAddr) -> VirtAddr {
 
 pub fn virt_to_phys(virtual_address: VirtAddr) -> PhysAddr {
     virtual_address - *PHYSICAL_MEMORY_OFFSET
+}
+
+pub(crate) fn init() {
+    heap::init();
 }

@@ -56,9 +56,14 @@ impl CalleeRegs {
 #[repr(C)]
 #[derive(Default)]
 pub struct UserContext {
-    general: GeneralRegs,
-    era: usize,
-    estat: usize,
+    /// General registers
+    pub general: GeneralRegs,
+    /// Pre-exception Mode Information
+    pub prmd: usize,
+    /// Exception Return Address
+    pub era: usize,
+    /// Extended Unit Enable
+    pub euen: usize,
 }
 
 #[derive(Debug, Default, Clone, Copy)]
