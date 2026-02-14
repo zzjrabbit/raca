@@ -10,6 +10,9 @@ Birthday of this version: 2025-11-20
 
 The current version is deeply inspired by zircon.
 
+## How to run it ?
+See [here](RUN.md).
+
 ## Roadmap
 
 ### Kernel Objects
