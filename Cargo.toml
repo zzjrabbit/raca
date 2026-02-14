@@ -5,7 +5,6 @@ members = [
     "kernel", 
     "object", 
     "kernel_hal", 
-    "kernel_hal_bare", 
     "errors", 
     "vdso/vdso", 
     "vdso/vdso_dylib", 
