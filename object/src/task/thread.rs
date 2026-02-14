@@ -58,7 +58,6 @@ impl Thread {
 
 impl Thread {
     pub fn start(self: &Arc<Self>, update_fn: impl FnMut() + Send + 'static) {
-        self.set_state(ThreadState::Ready);
         self.context().spawn(update_fn);
     }
 }

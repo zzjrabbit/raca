@@ -1,5 +1,5 @@
 pub use crate::arch::task::UserContext;
-pub use crate::platform::task::HwThread;
+pub use crate::platform::task::{HwThread, launch_multitask};
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ThreadState {
@@ -18,7 +18,7 @@ impl ThreadState {
         matches!(self, Self::Running)
     }
 
-    pub fn can_run(&self) -> bool {
+    pub fn ready(&self) -> bool {
         matches!(self, Self::Ready)
     }
 }

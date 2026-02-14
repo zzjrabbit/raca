@@ -1,11 +1,16 @@
 use core::arch::global_asm;
 
+use bit_field::BitField;
 use loongarch64::{
+    VirtAddr,
     instructions::interrupt,
-    registers::{ExceptionEntry, TimerConfigBuilder},
+    registers::{BadVirtAddr, ExceptionEntry, ExceptionStatus, TimerConfigBuilder, TimerIntClear},
 };
 
-use crate::arch::task::{GeneralRegs, UserContext};
+use crate::{
+    arch::task::{GeneralRegs, UserContext},
+    timer::call_timer_callback_functions,
+};
 
 global_asm!(include_str!("trap.S"));
 
@@ -29,7 +34,26 @@ pub struct TrapFrame {
 
 #[unsafe(no_mangle)]
 extern "C" fn trap_handler(f: &mut TrapFrame) {
-    log::error!("Trap: {:#x?}", f);
+    let estat = ExceptionStatus.read();
+    let ecode = estat.get_bits(16..=21);
+
+    if ecode == 0 {
+        if estat.get_bit(11) {
+            call_timer_callback_functions(f);
+            TimerIntClear.write(1);
+        } else {
+            log::warn!("Unknown interrupt!");
+        }
+        return;
+    }
+
+    let badv = VirtAddr::new(BadVirtAddr.read());
+
+    log::error!("Unhandled exception {:#x}!", ecode);
+    log::error!("BADV: {:#x}", badv);
+    log::error!("Trap Frame: {:#x?}", f);
+
+    panic!("Unrecoverable Exception");
 }
 
 pub fn init() {

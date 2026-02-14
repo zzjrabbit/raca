@@ -11,6 +11,8 @@ use crate::task::ThreadState;
 
 static TOKIO_RT: LazyLock<Runtime> = LazyLock::new(|| Runtime::new().unwrap());
 
+pub fn launch_multitask() {}
+
 #[derive(Default)]
 pub struct HwThread {
     state: Mutex<ThreadState>,
@@ -22,6 +24,7 @@ impl HwThread {
     }
 
     pub fn spawn(self: &Arc<Self>, mut f: impl FnMut() + Send + 'static) {
+        self.set_state(ThreadState::Ready);
         let ctx = self.clone();
         TOKIO_RT.spawn(async move {
             Box::pin(ThreadFuture::new(ctx.clone())).await;
@@ -55,7 +58,7 @@ impl ThreadFuture {
 impl Future for ThreadFuture {
     type Output = ();
     fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
-        match self.ctx.state().can_run() {
+        match self.ctx.state().ready() {
             true => Poll::Ready(()),
             false => Poll::Pending,
         }

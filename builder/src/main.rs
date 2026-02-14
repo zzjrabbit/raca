@@ -52,6 +52,10 @@ struct RunArgs {
     #[clap(default_value = "loongarch64")]
     arch: String,
 
+    #[clap(short, long)]
+    #[clap(default_value_t = false)]
+    debug: bool,
+
     /// boot device
     #[clap(long)]
     #[clap(default_value_t = StorageDevice::Nvme)]

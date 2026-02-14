@@ -1,10 +1,12 @@
 #![cfg_attr(not(feature = "libos"), no_std)]
+#![feature(sync_unsafe_cell)]
 
 extern crate alloc;
 
 pub mod io;
 pub mod mem;
 pub mod task;
+pub mod timer;
 
 #[cfg(target_arch = "x86_64")]
 #[path = "arch/x86_64/mod.rs"]

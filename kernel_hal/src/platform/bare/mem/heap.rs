@@ -42,7 +42,7 @@ unsafe impl GlobalAlloc for DefaultAllocator {
 impl DefaultAllocator {
     #[allow(static_mut_refs)]
     fn init(&self) {
-        const HEAP_SIZE: usize = 16 * 1024 * 1024;
+        const HEAP_SIZE: usize = 4 * 1024 * 1024;
         const HEAP_START: usize = 0xffffc00000000000;
 
         let page_size = PageSize::Size4K;

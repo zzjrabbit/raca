@@ -24,6 +24,7 @@ pub fn do_run(args: RunArgs) -> Result<()> {
         arch,
         storage,
         release,
+        debug,
     } = args;
 
     let vdso_dylib_path = build_vdso(&target_dir, &arch, release, false)?;
@@ -57,6 +58,9 @@ pub fn do_run(args: RunArgs) -> Result<()> {
     }
     if serial {
         cmd.arg("-serial").arg("stdio");
+    }
+    if debug {
+        cmd.arg("-s").arg("-S");
     }
 
     cmd.arg("-device").arg("qemu-xhci,id=xhci");
