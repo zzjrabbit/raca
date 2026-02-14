@@ -37,8 +37,8 @@ jobs:
     - name: Build
       run: cargo kbuild
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
+    - name: Upload racaOS.img
+      uses: actions/upload-artifact@v6
       with:
         name: ${{ matrix.name }}
         path: ${{ matrix.name }}
@@ -52,10 +52,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
+    - name: Download racaOS.img
+      uses: actions/download-artifact@v7
       with:
-        path: artifacts
+        name: racaOS.img
 
     - name: Generate tag name
       id: tag
@@ -73,5 +73,4 @@ jobs:
       with:
         tag_name: ${{ steps.tag.outputs.tag }}
         name: "racaOS ${{ steps.tag.outputs.tag }}"
-        files: |
-          artifacts/racaOS.img
+        files: racaOS.img
