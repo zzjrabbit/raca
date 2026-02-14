@@ -3,10 +3,10 @@
 use anyhow::Result;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
-use crate::cli::{do_clippy, do_run, do_test};
+use crate::commands::*;
 
 mod cargo;
-mod cli;
+mod commands;
 mod image;
 
 /// racaOS kernel builder, tester and runner
@@ -19,6 +19,8 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum SubCommands {
+    /// Build the kernel.
+    Build(BuildArgs),
     /// Run the kernel.
     Run(RunArgs),
     /// Test object and kernel_hal
@@ -28,7 +30,21 @@ enum SubCommands {
 }
 
 #[derive(Args)]
+struct BuildArgs {
+    /// Build with release
+    #[clap(long)]
+    release: bool,
+
+    /// Set target arch.
+    #[clap(long)]
+    #[clap(default_value = "loongarch64")]
+    arch: String,
+}
+
+#[derive(Args)]
 struct RunArgs {
+    #[command(flatten)]
+    build_args: BuildArgs,
     /// use Hyper-V acceleration
     #[clap(short, long)]
     whpx: bool,
@@ -41,16 +57,6 @@ struct RunArgs {
     /// redirect serial to stdio
     #[clap(short, long)]
     serial: bool,
-
-    /// Build with release
-    #[clap(long)]
-    #[clap(default_value_t = false)]
-    release: bool,
-
-    /// Set target arch.
-    #[clap(long)]
-    #[clap(default_value = "loongarch64")]
-    arch: String,
 
     #[clap(short, long)]
     #[clap(default_value_t = false)]
@@ -75,6 +81,7 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
+        SubCommands::Build(args) => do_build(args).map(|_| ()),
         SubCommands::Run(args) => do_run(args),
         SubCommands::Test => do_test(),
         SubCommands::Clippy => do_clippy(),
