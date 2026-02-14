@@ -11,6 +11,7 @@ rustflags = ["-C", "target-feature=-lasx,-lsx"]
 [alias]
 k = "run --package builder --"
 krun = "k run"
+kdebug = "k run -s -d"
 ktest = "k test"
 khelp = "k help"
 kclippy = "k clippy"

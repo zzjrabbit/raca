@@ -1,6 +1,6 @@
 use std::{
     path::{Path, PathBuf},
-    process::Command,
+    process::{Command, Stdio},
 };
 
 use anyhow::Result;
@@ -101,7 +101,21 @@ pub fn do_run(args: RunArgs) -> Result<()> {
 
     cmd.args(["-device", "ramfb"]);
 
-    cmd.spawn()?.wait()?.exit_ok()?;
+    if !debug {
+        cmd.spawn()?.wait()?.exit_ok()?;
+    } else {
+        cmd.stdout(Stdio::piped());
+        let mut qemu = cmd.spawn()?;
+
+        let mut gdb = Command::new("rust-lldb");
+        gdb.arg(kernel_path.to_str().unwrap());
+        gdb.arg("--one-line")
+            .arg(&format!("gdb-remote localhost:1234"));
+        let mut gdb = gdb.spawn()?;
+
+        gdb.wait()?.exit_ok()?;
+        qemu.wait()?.exit_ok()?;
+    }
     Ok(())
 }
 
