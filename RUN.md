@@ -9,7 +9,7 @@ Finally, you can launch the kernel by the following command.
 ``` sh
 qemu-system-loongarch64 \
     -machine virt \
-    -m 512 m \
+    -m 512m \
     -smp cores=4 \
     -cpu la464 \
     -serial stdio \
