@@ -12,8 +12,6 @@ qemu-system-loongarch64 \
     -m 512 m \
     -smp cores=4 \
     -cpu la464 \
-    # Add if you need to use Hyper-V acceleration.
-    # -accel whpx \
     -serial stdio \
     -device nvme,drive=disk,serial=deadbeef \
     -drive if=none,format=raw,id=disk,file=PATH_TO_THE_IMAGE \
