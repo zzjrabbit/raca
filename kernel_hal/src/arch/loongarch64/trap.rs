@@ -92,8 +92,9 @@ pub fn disable_int() {
     interrupt::disable();
 }
 
-static USER_PAGE_FAULT_HANDLER: Once<fn(&CpuExceptionInfo) -> core::result::Result<(), ()>> =
-    Once::new();
+type PageFaultHandler = fn(&CpuExceptionInfo) -> core::result::Result<(), ()>;
+
+static USER_PAGE_FAULT_HANDLER: Once<PageFaultHandler> = Once::new();
 
 #[derive(Debug)]
 pub struct CpuExceptionInfo {
@@ -103,8 +104,6 @@ pub struct CpuExceptionInfo {
 
 /// Injects a custom handler for page faults that occur in the kernel and
 /// are caused by user-space address.
-pub fn inject_user_page_fault_handler(
-    handler: fn(info: &CpuExceptionInfo) -> core::result::Result<(), ()>,
-) {
+pub fn inject_user_page_fault_handler(handler: PageFaultHandler) {
     USER_PAGE_FAULT_HANDLER.call_once(|| handler);
 }

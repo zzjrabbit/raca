@@ -994,6 +994,7 @@ dependencies = [
 name = "syscall"
 version = "0.1.0"
 dependencies = [
+ "errors",
  "kernel_hal",
  "log",
  "object",
@@ -1117,7 +1118,6 @@ name = "ustd"
 version = "0.1.0"
 dependencies = [
  "protocol",
- "vdso",
 ]
 
 [[package]]
@@ -1141,17 +1141,6 @@ dependencies = [
  "getrandom 0.4.1",
  "js-sys",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "vdso"
-version = "0.1.0"
-
-[[package]]
-name = "vdso_dylib"
-version = "0.1.0"
-dependencies = [
- "walkdir",
 ]
 
 [[package]]

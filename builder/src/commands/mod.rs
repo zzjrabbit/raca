@@ -27,34 +27,7 @@ fn user_target(arch: &str) -> &str {
     }
 }
 
-fn build_vdso(target_dir: &Path, arch: &str, release: bool, libos: bool) -> Result<PathBuf> {
-    let user_target = user_target(arch);
-
-    let mut vdso_dylib = CargoOpts::new("vdso_dylib".into());
-    vdso_dylib.build_std();
-    vdso_dylib.target(user_target.into());
-
-    if libos {
-        vdso_dylib.feature("libos");
-    }
-    if release {
-        vdso_dylib.release();
-    }
-
-    vdso_dylib.done();
-
-    Ok(target_dir
-        .join(user_target)
-        .join(if release { "release" } else { "debug" })
-        .join("libvdso_dylib.so"))
-}
-
-fn build_user_boot(
-    target_dir: &Path,
-    vdso_dylib_path: &Path,
-    arch: &str,
-    release: bool,
-) -> Result<PathBuf> {
+fn build_user_boot(target_dir: &Path, arch: &str, release: bool) -> Result<PathBuf> {
     let user_target = user_target(arch);
 
     let mut user_boot = CargoOpts::new("user_boot".into());
@@ -64,8 +37,6 @@ fn build_user_boot(
     if release {
         user_boot.release();
     }
-
-    user_boot.env("VDSO_DYLIB_PATH", vdso_dylib_path.to_str().unwrap());
 
     user_boot.done();
 

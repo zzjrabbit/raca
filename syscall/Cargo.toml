@@ -4,6 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+errors = { version = "0.1.0", path = "../errors" }
 kernel_hal = { version = "0.1.0", path = "../kernel_hal", default-features = false }
 log.workspace = true
 object = { version = "0.1.0", path = "../object", default-features = false }

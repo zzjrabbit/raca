@@ -5,7 +5,7 @@ use anyhow::Result;
 use crate::{
     BuildArgs,
     cargo::CargoOpts,
-    commands::{build_user_boot, build_vdso, target_dir},
+    commands::{build_user_boot, target_dir},
     image,
 };
 
@@ -14,8 +14,7 @@ pub fn do_build(args: BuildArgs) -> Result<(PathBuf, PathBuf)> {
 
     let BuildArgs { release, arch } = args;
 
-    let vdso_dylib_path = build_vdso(&target_dir, &arch, release, false)?;
-    let user_boot_path = build_user_boot(&target_dir, &vdso_dylib_path, &arch, release)?;
+    let user_boot_path = build_user_boot(&target_dir, &arch, release)?;
 
     let kernel_target = format!("{}-unknown-none", arch);
     let mut kernel = CargoOpts::new("kernel".into());
@@ -23,7 +22,6 @@ pub fn do_build(args: BuildArgs) -> Result<(PathBuf, PathBuf)> {
     if release {
         kernel.release();
     }
-    kernel.env("VDSO_DYLIB_PATH", vdso_dylib_path.to_str().unwrap());
     kernel.env("USER_BOOT_PATH", user_boot_path.to_str().unwrap());
     kernel.done();
     let kernel_path = target_dir

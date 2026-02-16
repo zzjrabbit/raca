@@ -6,8 +6,6 @@ members = [
     "object", 
     "kernel_hal", 
     "errors", 
-    "vdso/vdso", 
-    "vdso/vdso_dylib", 
     "user/ustd", 
     "syscall",
     "user/protocol", 

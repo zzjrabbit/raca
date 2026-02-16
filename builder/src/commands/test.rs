@@ -1,19 +1,10 @@
 use anyhow::Result;
 
-use crate::{
-    cargo::CargoOpts,
-    commands::{build_vdso, target_dir},
-};
+use crate::cargo::CargoOpts;
 
 pub fn do_test() -> Result<()> {
-    let target_dir = target_dir();
-    let arch = "x86_64";
-
-    let vdso_dylib_path = build_vdso(&target_dir, arch, false, true)?;
-
     let mut object = CargoOpts::new("object".into());
     object.action("test");
-    object.env("VDSO_DYLIB_PATH", vdso_dylib_path.to_str().unwrap());
     object.feature("libos");
     object.done();
 
