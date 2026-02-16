@@ -1,9 +1,17 @@
 use core::sync::atomic::{AtomicU64, Ordering};
 
 use alloc::sync::{Arc, Weak};
-use kernel_hal::task::{HwThread, ThreadState};
+use kernel_hal::{
+    mem::PageProperty,
+    task::{HwThread, ThreadState},
+};
 
-use crate::{impl_kobj, object::KObjectBase, task::Process};
+use crate::{
+    impl_kobj,
+    mem::{Vmar, Vmo},
+    object::KObjectBase,
+    task::Process,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ThreadId(u64);
@@ -32,11 +40,21 @@ impl_kobj!(Thread);
 
 impl Thread {
     pub fn new(process: Weak<Process>) -> Arc<Self> {
+        static KERNEL_STACK_SIZE: usize = 32 * 1024;
+
         Arc::new_cyclic(|this: &Weak<Self>| Self {
             process,
             tid: ThreadId::new(),
             base: KObjectBase::default(),
-            ctx: Arc::new(HwThread::new(this.clone())),
+            ctx: Arc::new(HwThread::new(this.clone(), || {
+                let vmar = Vmar::kernel();
+                let stack = vmar.allocate_child(KERNEL_STACK_SIZE).unwrap();
+                let vmo = Vmo::allocate_ram(stack.page_count()).unwrap();
+                stack
+                    .direct_map(0, &vmo, PageProperty::kernel_data())
+                    .unwrap();
+                stack.end()
+            })),
         })
     }
 }

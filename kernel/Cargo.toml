@@ -5,6 +5,7 @@ edition.workspace = true
 
 [dependencies]
 elf = { version = "0.8.0", default-features = false }
+errors = { version = "0.1.0", path = "../errors" }
 kernel_hal = { version = "0.1.0", path = "../kernel_hal" }
 limine = "0.5.0"
 log.workspace = true

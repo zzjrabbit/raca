@@ -543,6 +543,7 @@ name = "kernel"
 version = "0.1.0"
 dependencies = [
  "elf",
+ "errors",
  "kernel_hal",
  "limine",
  "log",

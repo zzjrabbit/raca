@@ -2,7 +2,9 @@ use core::ops::Range;
 
 use crate::{Errno, Result};
 use alloc::{sync::Arc, vec::Vec};
-use kernel_hal::mem::{MMUFlags, PageProperty, VirtAddr, VmSpace};
+use kernel_hal::mem::{
+    KERNEL_ASPACE_BASE, KERNEL_ASPACE_SIZE, MMUFlags, PageProperty, VirtAddr, VmSpace,
+};
 use kernel_hal::mem::{USER_ASPACE_BASE, USER_ASPACE_SIZE};
 use spin::{Lazy, Mutex, RwLock};
 
@@ -46,6 +48,23 @@ impl Vmar {
             })
         });
         ROOT.clone()
+    }
+
+    pub fn kernel() -> Arc<Self> {
+        static KERNEL: Lazy<Arc<Vmar>> = Lazy::new(|| {
+            Arc::new(Vmar {
+                vm_space: unsafe { VmSpace::kernel() },
+                inner: RwLock::new(VmarInner {
+                    vm_mappings: Vec::new(),
+                    children: Vec::new(),
+                }),
+                lock: Mutex::new(()),
+                base: KERNEL_ASPACE_BASE,
+                size: KERNEL_ASPACE_SIZE,
+                is_root: true,
+            })
+        });
+        KERNEL.clone()
     }
 }
 
@@ -156,6 +175,21 @@ impl Vmar {
 }
 
 impl Vmar {
+    pub fn direct_map(&self, offset: usize, vmo: &Vmo, prop: PageProperty) -> Result<()> {
+        let addr = self.base() + offset;
+        let size = vmo.len();
+
+        let aligned = align_down_by_page_size(addr);
+        let mut cursor = self.vm_space.cursor(aligned)?;
+
+        for id in 0..size / PAGE_SIZE {
+            let offset = id * PAGE_SIZE;
+            cursor.map(&vmo.get_ram(offset)?.unwrap().1, prop)?;
+        }
+
+        Ok(())
+    }
+
     pub fn map(
         &self,
         offset: usize,

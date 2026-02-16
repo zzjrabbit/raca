@@ -17,6 +17,12 @@ use object::{
 };
 use syscall::syscall_handler;
 
+use crate::stack::new_user_stack;
+
+extern crate alloc;
+
+mod stack;
+
 #[used]
 #[unsafe(link_section = ".requests")]
 static BASE_REVISION: BaseRevision = BaseRevision::with_revision(4);
@@ -115,17 +121,7 @@ pub extern "C" fn kmain() -> ! {
     let entry_point = user_boot.ehdr.e_entry as usize + load_base;
     log::debug!("entry: {:#x}", entry_point);
 
-    const STACK_SIZE: usize = 8 * 1024 * 1024;
-
-    let stack = process.root_vmar().allocate_child(STACK_SIZE).unwrap();
-    stack
-        .map(
-            0,
-            &Vmo::allocate_ram(stack.page_count()).unwrap(),
-            PageProperty::user_data(),
-            false,
-        )
-        .unwrap();
+    let stack = new_user_stack(process.root_vmar().clone()).unwrap();
 
     let thread = process.new_thread();
     process.start(

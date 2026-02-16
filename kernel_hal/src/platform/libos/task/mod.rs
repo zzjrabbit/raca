@@ -21,7 +21,7 @@ pub struct HwThread {
 }
 
 impl HwThread {
-    pub fn new(_th: Weak<dyn Any + Send + Sync>) -> Self {
+    pub fn new(_th: Weak<dyn Any + Send + Sync>, _kernel_stack_getter: impl Fn() -> usize) -> Self {
         Default::default()
     }
 
@@ -79,7 +79,7 @@ mod tests {
 
     #[test]
     fn test_task_context() {
-        let ctx = Arc::new(HwThread::new(Weak::<()>::new()));
+        let ctx = Arc::new(HwThread::new(Weak::<()>::new(), || 0));
 
         ctx.spawn(|| {
             println!("Task run");

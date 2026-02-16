@@ -11,7 +11,7 @@ pub fn syscall_handler(process: &Arc<Process>, user_ctx: &mut UserContext) {
     let id = user_ctx.get_syscall_num();
 
     log::debug!(
-        "syscall{}: {:#x} {:#x} {:#x} {:#x} {:#x} {:#x}",
+        "syscall{}({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})",
         id,
         arg1,
         arg2,

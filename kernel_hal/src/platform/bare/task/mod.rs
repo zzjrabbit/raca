@@ -7,7 +7,6 @@ use core::{
 use alloc::{
     boxed::Box,
     sync::{Arc, Weak},
-    vec::Vec,
 };
 use spin::Mutex;
 
@@ -46,10 +45,13 @@ struct HwThreadInner {
 }
 
 impl HwThread {
-    pub fn new(thread: Weak<dyn Any + Send + Sync>) -> Self {
+    pub fn new(
+        thread: Weak<dyn Any + Send + Sync>,
+        kernel_stack_getter: impl Fn() -> usize,
+    ) -> Self {
         let mut ctx = TaskContext::new();
         ctx.set_ip(kernel_task_entry_wrapper as *const () as usize);
-        ctx.set_sp(Vec::leak(alloc::vec![0u8; 16 * 1024]).as_ptr() as usize);
+        ctx.set_sp(kernel_stack_getter());
         Self {
             inner: Mutex::new(HwThreadInner {
                 state: ThreadState::Blocked,

@@ -96,7 +96,7 @@ impl Process {
             #[cfg(not(feature = "libos"))]
             if matches!(info.code, 1..8) {
                 if page_fault_handler(&info).is_err() {
-                    log::error!("page fault handler failed");
+                    log::error!("page fault handler failed, info: {:#x?}", info);
                     kernel_hal::platform::idle_loop();
                 }
             } else if info.code == 0xb {
