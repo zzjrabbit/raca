@@ -329,8 +329,8 @@ impl GeneralPageTable for OffsetPageTable<'_> {
             let kernel_page_table_ptr =
                 Vaddr::new(self.higher_half_page_table() as *const _ as u64).as_mut_ptr();
             OffsetPageTable::new(
-                &mut *kernel_page_table_ptr,
                 root_table,
+                &mut *kernel_page_table_ptr,
                 phys_to_virt(0) as u64,
             )
         };
