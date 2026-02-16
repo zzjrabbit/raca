@@ -15,7 +15,7 @@ default-members = ["builder"]
 resolver = "3"
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 [profile.dev]
@@ -30,3 +30,5 @@ lto = "thin"
 log = "0.4.28"
 spin = "0.10.0"
 tokio = { version = "1.49.0", features = ["macros", "rt", "rt-multi-thread"] }
+errors = { path = "./errors" }
+ustd = { path = "./user/ustd" }

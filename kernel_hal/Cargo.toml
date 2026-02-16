@@ -6,7 +6,7 @@ edition.workspace = true
 [dependencies]
 bit_field = "0.10.3"
 bitflags = "2.10.0"
-errors = { version = "0.1.0", path = "../errors" }
+errors.workspace = true
 humansize = "2.1.3"
 log.workspace = true
 spin.workspace = true

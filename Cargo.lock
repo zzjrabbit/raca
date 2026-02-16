@@ -122,7 +122,7 @@ dependencies = [
 
 [[package]]
 name = "builder"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -317,7 +317,7 @@ dependencies = [
 
 [[package]]
 name = "errors"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "fastrand"
@@ -540,7 +540,7 @@ dependencies = [
 
 [[package]]
 name = "kernel"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "elf",
  "errors",
@@ -553,7 +553,7 @@ dependencies = [
 
 [[package]]
 name = "kernel_hal"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "acpi",
  "bit_field",
@@ -678,7 +678,7 @@ dependencies = [
 
 [[package]]
 name = "object"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bitflags 2.11.0",
  "downcast-rs",
@@ -769,7 +769,7 @@ dependencies = [
 
 [[package]]
 name = "protocol"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "quote"
@@ -981,9 +981,9 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "syn"
-version = "2.0.115"
+version = "2.0.116"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e614ed320ac28113fa64972c4262d5dbc89deacdfd00c34a3e4cea073243c12"
+checksum = "3df424c70518695237746f84cede799c9c58fcb37450d7b23716568cc8bc69cb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -992,7 +992,7 @@ dependencies = [
 
 [[package]]
 name = "syscall"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "errors",
  "kernel_hal",
@@ -1062,9 +1062,9 @@ checksum = "562d481066bde0658276a35467c4af00bdc6ee726305698a55b86e61d7ad82bb"
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.23"
+version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "537dd038a89878be9b64dd4bd1b260315c1bb94f4d784956b81e27a088d9a09e"
+checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 
 [[package]]
 name = "unicode-xid"
@@ -1108,14 +1108,14 @@ dependencies = [
 
 [[package]]
 name = "user_boot"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "ustd",
 ]
 
 [[package]]
 name = "ustd"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "protocol",
 ]
