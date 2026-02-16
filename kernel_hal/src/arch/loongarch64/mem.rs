@@ -21,7 +21,7 @@ use crate::{
 
 pub const KERNEL_ASPACE_BASE: usize = 0xffff_ff02_0000_0000;
 pub const KERNEL_ASPACE_SIZE: usize = 0x0000_0080_0000_0000;
-pub const USER_ASPACE_BASE: usize = 0x10_0000;
+pub const USER_ASPACE_BASE: usize = 0x1_0000_0000;
 pub const USER_ASPACE_SIZE: usize = (1usize << 47) - 4096 - USER_ASPACE_BASE;
 
 pub fn current_page_table() -> OffsetPageTable<'static> {

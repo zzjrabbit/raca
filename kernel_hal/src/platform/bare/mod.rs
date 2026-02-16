@@ -9,7 +9,9 @@ mod panic;
 pub(crate) mod task;
 
 pub mod trap {
-    pub use crate::arch::trap::{disable_int, enable_int};
+    pub use crate::arch::trap::{
+        CpuExceptionInfo, disable_int, enable_int, inject_user_page_fault_handler,
+    };
 }
 
 pub(crate) fn init() {

@@ -8,6 +8,7 @@ use crate::task::HwThread;
 
 pub static SCHEDULER: Mutex<Scheduler> = Mutex::new(Scheduler::new());
 
+#[derive(Debug)]
 pub struct Scheduler {
     threads: VecDeque<Arc<HwThread>>,
     current: Option<Weak<HwThread>>,
@@ -23,14 +24,22 @@ impl Scheduler {
 }
 
 impl Scheduler {
-    pub fn get_next(&mut self) -> Arc<HwThread> {
-        let next = self.threads.pop_front().unwrap();
+    pub fn no_next(&self) -> bool {
+        self.threads.is_empty()
+    }
+
+    pub fn get_next(&mut self) -> Option<Arc<HwThread>> {
+        let next = self.threads.pop_front()?;
         self.current = Some(Arc::downgrade(&next));
-        next
+        Some(next)
     }
 
     pub fn current(&self) -> Option<Arc<HwThread>> {
         self.current.clone().and_then(|t| t.upgrade())
+    }
+
+    pub fn take_current(&mut self) -> Option<Arc<HwThread>> {
+        self.current.take().and_then(|t| t.upgrade())
     }
 
     pub fn remove(&mut self, thread: &Arc<HwThread>) {

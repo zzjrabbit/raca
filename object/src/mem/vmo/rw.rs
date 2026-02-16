@@ -30,13 +30,6 @@ impl Vmo {
     }
 
     pub fn write_bytes(&self, offset: usize, buffer: &[u8]) -> Result<()> {
-        log::info!(
-            "Vmo::write_bytes self.len={:#x} offset={:#x} buffer.len={:#x}",
-            self.len(),
-            offset,
-            buffer.len()
-        );
-
         if offset + buffer.len() > self.len() {
             return Err(Errno::InvArg.with_message("Out of bounds."));
         }

@@ -9,3 +9,7 @@ pub mod ipc;
 pub mod mem;
 pub mod object;
 pub mod task;
+
+pub fn init() {
+    task::init();
+}

@@ -76,17 +76,18 @@ pub fn do_run(args: RunArgs) -> Result<()> {
     if !debug {
         cmd.spawn()?.wait()?.exit_ok()?;
     } else {
+        cmd.stdin(Stdio::piped());
         cmd.stdout(Stdio::piped());
         let mut qemu = cmd.spawn()?;
 
-        let mut gdb = Command::new("rust-lldb");
-        gdb.arg(kernel_path.to_str().unwrap());
-        gdb.arg("--one-line")
+        let mut lldb = Command::new("rust-lldb");
+        lldb.arg(kernel_path.to_str().unwrap());
+        lldb.arg("--one-line")
             .arg(&format!("gdb-remote localhost:1234"));
-        let mut gdb = gdb.spawn()?;
+        let mut lldb = lldb.spawn()?;
 
-        gdb.wait()?.exit_ok()?;
-        qemu.wait()?.exit_ok()?;
+        lldb.wait()?.exit_ok()?;
+        qemu.kill()?;
     }
     Ok(())
 }

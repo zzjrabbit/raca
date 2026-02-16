@@ -1,13 +1,8 @@
 #![no_std]
 #![feature(rustc_private)]
 
-use core::{ffi::c_int, slice::from_raw_parts};
+use core::ffi::c_int;
 
-use elf::{
-    ElfBytes,
-    abi::{R_X86_64_JUMP_SLOT, SHT_RELA, STB_GLOBAL, STV_DEFAULT},
-    endian::LittleEndian,
-};
 use protocol::ProcStartInfo;
 
 extern crate compiler_builtins;
@@ -23,8 +18,8 @@ unsafe extern "C" {
 }
 
 #[unsafe(no_mangle)]
-extern "C" fn _start(info: *const ProcStartInfo) -> ! {
-    let ProcStartInfo {
+extern "C" fn _start(_info: *const ProcStartInfo) -> ! {
+    /*let ProcStartInfo {
         vdso_load_base,
         vdso_base,
         vdso_size,
@@ -72,7 +67,7 @@ extern "C" fn _start(info: *const ProcStartInfo) -> ! {
         unsafe {
             ((rela.r_offset as usize + load_base) as *mut usize).write(vdso_symbol);
         }
-    }
+    }*/
 
     unsafe {
         main();

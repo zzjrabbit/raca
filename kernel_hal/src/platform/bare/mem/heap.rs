@@ -1,6 +1,7 @@
 use core::alloc::GlobalAlloc;
 
-use good_memory_allocator::SpinLockedAllocator;
+use spin::Mutex;
+use talc::{ClaimOnOom, Span, Talc, Talck};
 
 use crate::{
     arch::mem::current_page_table,
@@ -13,11 +14,13 @@ use crate::{
 #[global_allocator]
 pub static ALLOCATOR: DefaultAllocator = DefaultAllocator::new();
 
-pub struct DefaultAllocator(SpinLockedAllocator);
+pub struct DefaultAllocator(Talck<Mutex<()>, ClaimOnOom>);
 
 impl DefaultAllocator {
     pub const fn new() -> Self {
-        DefaultAllocator(SpinLockedAllocator::empty())
+        DefaultAllocator(Talck::new(Talc::new(unsafe {
+            ClaimOnOom::new(Span::empty())
+        })))
     }
 }
 
@@ -39,12 +42,11 @@ unsafe impl GlobalAlloc for DefaultAllocator {
     }
 }
 
-impl DefaultAllocator {
-    #[allow(static_mut_refs)]
-    fn init(&self) {
-        const HEAP_SIZE: usize = 4 * 1024 * 1024;
-        const HEAP_START: usize = 0xffffc00000000000;
+const HEAP_SIZE: usize = 16 * 1024 * 1024;
+const HEAP_START: usize = 0xffff_c000_0000_0000;
 
+impl DefaultAllocator {
+    fn init(&self) {
         let page_size = PageSize::Size4K;
         let page_count = HEAP_SIZE / page_size as usize;
 
@@ -71,7 +73,10 @@ impl DefaultAllocator {
         }
 
         unsafe {
-            self.0.init(HEAP_START, HEAP_SIZE);
+            self.0
+                .lock()
+                .claim(Span::from_base_size(HEAP_START as _, HEAP_SIZE))
+                .unwrap();
         }
     }
 }

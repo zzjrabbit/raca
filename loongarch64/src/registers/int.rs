@@ -48,3 +48,9 @@ impl TimerConfigBuilder {
         TimerConfig.write(self.value);
     }
 }
+
+impl ExceptionStatus {
+    pub fn read_ecode(&self) -> u64 {
+        self.read().get_bits(16..=21)
+    }
+}

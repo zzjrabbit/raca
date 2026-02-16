@@ -1,6 +1,14 @@
-use core::cell::{Cell, SyncUnsafeCell};
+use core::{
+    any::Any,
+    cell::{Cell, SyncUnsafeCell},
+    fmt::Debug,
+};
 
-use alloc::{boxed::Box, sync::Arc, vec::Vec};
+use alloc::{
+    boxed::Box,
+    sync::{Arc, Weak},
+    vec::Vec,
+};
 use spin::Mutex;
 
 use crate::{
@@ -24,33 +32,31 @@ pub(crate) extern "C" fn kernel_task_entry() -> ! {
     }
 }
 
+#[derive(Debug)]
 pub struct HwThread {
     inner: Mutex<HwThreadInner>,
     ctx: SyncUnsafeCell<TaskContext>,
     func: FuncWrapper,
+    thread: Weak<dyn Any + Send + Sync>,
 }
 
+#[derive(Debug)]
 struct HwThreadInner {
     state: ThreadState,
 }
 
-impl Default for HwThread {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl HwThread {
-    pub fn new() -> Self {
+    pub fn new(thread: Weak<dyn Any + Send + Sync>) -> Self {
         let mut ctx = TaskContext::new();
         ctx.set_ip(kernel_task_entry_wrapper as *const () as usize);
-        ctx.set_sp(Vec::leak(alloc::vec![0u8; 8 * 1024]).as_ptr() as usize);
+        ctx.set_sp(Vec::leak(alloc::vec![0u8; 16 * 1024]).as_ptr() as usize);
         Self {
             inner: Mutex::new(HwThreadInner {
                 state: ThreadState::Blocked,
             }),
             ctx: SyncUnsafeCell::new(ctx),
             func: FuncWrapper::new(),
+            thread,
         }
     }
 }
@@ -68,6 +74,7 @@ impl HwThread {
             SCHEDULER.lock().add(self);
         }
     }
+
     pub fn state(&self) -> ThreadState {
         self.inner.lock().state
     }
@@ -76,10 +83,14 @@ impl HwThread {
         self.func.set(Box::new(f));
         self.set_state(ThreadState::Ready);
     }
+
+    pub fn current_thread() -> Weak<dyn Any + Send + Sync> {
+        SCHEDULER.lock().current().unwrap().thread.clone()
+    }
 }
 
 pub fn launch_multitask() {
-    let next = SCHEDULER.lock().get_next();
+    let next = SCHEDULER.lock().get_next().unwrap();
     // Access directly to avoid unnecessary checks.
     next.inner.lock().state = ThreadState::Running;
     let next_ctx = next.ctx.get();
@@ -91,20 +102,25 @@ pub fn launch_multitask() {
 
 #[inline(always)]
 pub(super) fn schedule() {
-    let current = SCHEDULER.lock().current().unwrap();
-    let current_ctx = current.ctx.get();
+    if SCHEDULER.lock().no_next() {
+        // Fall through.
+        return;
+    }
 
-    let next_ctx = {
-        let next = SCHEDULER.lock().get_next();
-        // Access directly to avoid unnecessary checks.
-        next.inner.lock().state = ThreadState::Running;
-        next.ctx.get()
-    };
+    let current = SCHEDULER.lock().take_current().unwrap();
+    let current_ctx = current.ctx.get();
 
     if current.state().running() {
         current.inner.lock().state = ThreadState::Ready;
         SCHEDULER.lock().add(&current);
     }
+
+    let next_ctx = {
+        let next = SCHEDULER.lock().get_next().unwrap();
+        // Access directly to avoid unnecessary checks.
+        next.inner.lock().state = ThreadState::Running;
+        next.ctx.get()
+    };
 
     unsafe {
         context_switch(next_ctx, current_ctx);
@@ -114,6 +130,12 @@ pub(super) fn schedule() {
 type Entry = Box<dyn FnMut() + Send + 'static>;
 
 struct FuncWrapper(Cell<Option<Entry>>);
+
+impl Debug for FuncWrapper {
+    fn fmt(&self, _f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        Ok(())
+    }
+}
 
 unsafe impl Send for FuncWrapper {}
 unsafe impl Sync for FuncWrapper {}

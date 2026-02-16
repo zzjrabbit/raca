@@ -7,7 +7,3 @@ edition.workspace = true
 kernel_hal = { version = "0.1.0", path = "../kernel_hal", default-features = false }
 log.workspace = true
 object = { version = "0.1.0", path = "../object", default-features = false }
-
-[features]
-default = ["libos"]
-libos = ["object/libos", "kernel_hal/libos"]

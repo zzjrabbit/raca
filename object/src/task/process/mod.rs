@@ -7,7 +7,7 @@ use crate::{
     mem::Vmar,
     new_kobj,
     object::{Handle, KObjectBase, KernelObject, Rights},
-    task::Thread,
+    task::{Thread, exception::page_fault_handler},
 };
 
 mod vdso;
@@ -61,6 +61,20 @@ impl Process {
 }
 
 impl Process {
+    pub fn current() -> Option<Arc<Self>> {
+        Thread::current().and_then(|thread| thread.process())
+    }
+}
+
+impl Process {
+    pub fn new_thread(self: &Arc<Self>) -> Arc<Thread> {
+        let thread = Thread::new(Arc::downgrade(self));
+        self.add_thread(thread.clone());
+        thread
+    }
+}
+
+impl Process {
     pub fn start(
         self: &Arc<Self>,
         thread: Arc<Thread>,
@@ -69,8 +83,6 @@ impl Process {
         initializer: impl FnOnce(&mut UserContext),
         syscall_handler: impl Fn(&Arc<Self>, &mut UserContext) + Send + 'static,
     ) {
-        self.add_thread(thread.clone());
-
         let mut user_ctx = UserContext::default();
         user_ctx.set_ip(entry);
         user_ctx.set_sp(stack);
@@ -79,10 +91,20 @@ impl Process {
 
         let process = self.clone();
         thread.start(move || {
-            log::debug!("into user space");
-            user_ctx.enter_user_space();
-            log::debug!("user space out");
-            syscall_handler(&process, &mut user_ctx);
+            process.root_vmar().activate();
+            let info = user_ctx.enter_user_space();
+            #[cfg(not(feature = "libos"))]
+            if matches!(info.code, 1..8) {
+                if page_fault_handler(&info).is_err() {
+                    log::error!("page fault handler failed");
+                    kernel_hal::platform::idle_loop();
+                }
+            } else if info.code == 0xb {
+                syscall_handler(&process, &mut user_ctx);
+            } else {
+                log::error!("unknown exception code: {}", info.code);
+                kernel_hal::platform::idle_loop();
+            }
         });
     }
 }
@@ -166,7 +188,7 @@ mod tests {
         }
 
         let process = Process::new();
-        let thread = Thread::new();
+        let thread = process.new_thread();
 
         let stack = process.root_vmar().allocate_child(STACK_SIZE).unwrap();
         stack

@@ -1,5 +1,7 @@
 use std::{
+    any::Any,
     pin::Pin,
+    sync::Weak,
     sync::{Arc, LazyLock, Mutex},
     task::{Context, Poll},
 };
@@ -19,7 +21,7 @@ pub struct HwThread {
 }
 
 impl HwThread {
-    pub fn new() -> Self {
+    pub fn new(_th: Weak<dyn Any + Send + Sync>) -> Self {
         Default::default()
     }
 
@@ -42,6 +44,10 @@ impl HwThread {
 
     pub fn set_state(&self, state: ThreadState) {
         *self.state.lock().unwrap() = state;
+    }
+
+    pub fn current_thread() -> Weak<dyn Any + Send + Sync> {
+        Weak::<()>::new()
     }
 }
 
@@ -73,7 +79,7 @@ mod tests {
 
     #[test]
     fn test_task_context() {
-        let ctx = Arc::new(HwThread::new());
+        let ctx = Arc::new(HwThread::new(Weak::<()>::new()));
 
         ctx.spawn(|| {
             println!("Task run");

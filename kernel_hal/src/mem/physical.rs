@@ -118,7 +118,6 @@ impl PhysicalMemory {
 
         let virtual_address = phys_to_virt(self.start_address + offset);
 
-        log::debug!("reading at {:#x}", virtual_address);
         unsafe {
             core::ptr::copy_nonoverlapping(
                 virtual_address as *const u8,
@@ -138,8 +137,6 @@ impl PhysicalMemory {
         }
 
         let virtual_address = phys_to_virt(self.start_address + offset);
-
-        log::debug!("writing at {:#x}", virtual_address);
 
         unsafe {
             core::ptr::copy_nonoverlapping(

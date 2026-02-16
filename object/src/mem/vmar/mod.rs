@@ -166,10 +166,10 @@ impl Vmar {
         let addr = self.base() + offset;
         let size = vmo.len();
 
-        log::debug!("Vmar::map: addr={:#x} size={:#x}", addr, size);
+        log::debug!("Vmar::map: addr={:#x} size={:#x}", addr, size,);
 
         if !self.contains_range(addr, size) {
-            return Err(Errno::InvArg.no_message());
+            return Err(Errno::InvArg.with_message("Out of VMAR range!"));
         }
         if size == 0 {
             return Ok(());
@@ -407,7 +407,7 @@ impl Vmar {
     }
 
     pub fn contains_range(&self, address: VirtAddr, size: usize) -> bool {
-        self.contains(address) && self.contains(address + size - 1)
+        address >= self.base && address + size <= self.end()
     }
 
     fn overlap_range(&self, start: VirtAddr, size: usize) -> bool {
@@ -415,13 +415,12 @@ impl Vmar {
     }
 
     fn range_is_child_free(&self, start: VirtAddr, size: usize) -> bool {
-        !self.inner.read().children.iter().any(|child| {
-            let result = child.overlap_range(start, size);
-            if result {
-                log::info!("child: {:#x?}", child);
-            }
-            result
-        })
+        !self
+            .inner
+            .read()
+            .children
+            .iter()
+            .any(|child| child.overlap_range(start, size))
     }
 
     fn range_is_completely_free(&self, start: VirtAddr, size: usize) -> bool {

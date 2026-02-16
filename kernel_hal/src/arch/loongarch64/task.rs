@@ -1,4 +1,10 @@
-use crate::{arch::trap::run_user, platform::task::kernel_task_entry};
+use loongarch64::registers::{BadVirtAddr, ExceptionStatus};
+
+use crate::{
+    arch::trap::{CpuExceptionInfo, run_user},
+    mem::VirtAddr,
+    platform::task::kernel_task_entry,
+};
 
 #[derive(Debug, Clone)]
 #[repr(C)]
@@ -100,7 +106,6 @@ pub unsafe extern "C" fn first_context_switch(nxt: *const TaskContext) {
 }
 
 #[repr(C)]
-#[derive(Default)]
 pub struct UserContext {
     /// General registers
     general: GeneralRegs,
@@ -110,6 +115,17 @@ pub struct UserContext {
     era: usize,
     /// Extended Unit Enable
     euen: usize,
+}
+
+impl Default for UserContext {
+    fn default() -> Self {
+        Self {
+            general: GeneralRegs::default(),
+            prmd: 0b0011, // User mode, enable interrupt
+            era: 0,
+            euen: 0,
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -150,9 +166,22 @@ pub struct GeneralRegs {
 }
 
 impl UserContext {
-    pub fn enter_user_space(&mut self) {
-        unsafe {
-            run_user(self);
+    pub fn enter_user_space(&mut self) -> CpuExceptionInfo {
+        loop {
+            unsafe {
+                run_user(self);
+            }
+            let ecode = ExceptionStatus.read_ecode();
+            if ecode != 0 {
+                if ecode == 0xb {
+                    self.era += 4;
+                }
+                let badv = BadVirtAddr.read() as VirtAddr;
+                break CpuExceptionInfo {
+                    code: ecode as usize,
+                    badv,
+                };
+            }
         }
     }
 }

@@ -15,8 +15,8 @@ impl Vmar {
     }
 
     pub fn read(&self, address: usize, buffer: &mut [u8]) -> Result<()> {
-        if !self.range_is_child_free(address, address + buffer.len()) {
-            return Err(Errno::InvArg.with_message("Source is in child vmar."));
+        if let Some(child) = self.find_child(address) {
+            return child.read(address, buffer);
         }
 
         let mut read: usize = 0;
@@ -47,8 +47,8 @@ impl Vmar {
     }
 
     pub fn write(&self, address: usize, buffer: &[u8]) -> Result<()> {
-        if !self.range_is_child_free(address, address + buffer.len()) {
-            return Err(Errno::InvArg.with_message("Dest is in child vmar."));
+        if let Some(child) = self.find_child(address) {
+            return child.write(address, buffer);
         }
 
         let mut written: usize = 0;

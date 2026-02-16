@@ -1,9 +1,9 @@
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use alloc::sync::Arc;
+use alloc::sync::{Arc, Weak};
 use kernel_hal::task::{HwThread, ThreadState};
 
-use crate::{impl_kobj, new_kobj, object::KObjectBase};
+use crate::{impl_kobj, object::KObjectBase, task::Process};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ThreadId(u64);
@@ -22,6 +22,7 @@ impl ThreadId {
 }
 
 pub struct Thread {
+    process: Weak<Process>,
     tid: ThreadId,
     base: KObjectBase,
     ctx: Arc<HwThread>,
@@ -30,10 +31,12 @@ pub struct Thread {
 impl_kobj!(Thread);
 
 impl Thread {
-    pub fn new() -> Arc<Self> {
-        new_kobj!({
+    pub fn new(process: Weak<Process>) -> Arc<Self> {
+        Arc::new_cyclic(|this: &Weak<Self>| Self {
+            process,
             tid: ThreadId::new(),
-            ctx: Arc::new(HwThread::new()),
+            base: KObjectBase::default(),
+            ctx: Arc::new(HwThread::new(this.clone())),
         })
     }
 }
@@ -53,6 +56,18 @@ impl Thread {
 
     pub fn context(&self) -> Arc<HwThread> {
         self.ctx.clone()
+    }
+
+    pub fn process(&self) -> Option<Arc<Process>> {
+        self.process.upgrade()
+    }
+}
+
+impl Thread {
+    pub fn current() -> Option<Arc<Self>> {
+        HwThread::current_thread()
+            .upgrade()
+            .and_then(|thread| thread.downcast().ok())
     }
 }
 
@@ -75,13 +90,13 @@ mod tests {
 
     #[test]
     fn new_thread() {
-        let thread = Thread::new();
+        let thread = Thread::new(Weak::new());
         assert_eq!(thread.state(), ThreadState::Ready);
     }
 
     #[test]
     fn start_thread() {
-        let thread = Thread::new();
+        let thread = Thread::new(Weak::new());
         thread.start(|| {
             std::println!("Thread started");
         });
@@ -101,7 +116,7 @@ mod tests {
         user_ctx.set_ip(entry_point as *const () as usize);
         user_ctx.set_sp(stack.as_ptr() as usize + stack.len());
 
-        let thread = Thread::new();
+        let thread = Thread::new(Weak::new());
         thread.start(move || {
             user_ctx.enter_user_space();
         });
