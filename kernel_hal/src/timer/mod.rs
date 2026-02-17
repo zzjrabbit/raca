@@ -15,6 +15,7 @@ where
     callbacks.push(Box::new(func));
 }
 
+#[allow(unused)]
 pub(crate) fn call_timer_callback_functions(_: &TrapFrame) {
     let callbacks = TIMER_CALLBACKS.lock();
     for callback in callbacks.iter() {

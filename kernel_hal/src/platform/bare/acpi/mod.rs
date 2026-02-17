@@ -13,6 +13,7 @@ static RSDP_REQUEST: RsdpRequest = RsdpRequest::new();
 
 pub static ACPI: Lazy<Acpi> = Lazy::new(|| init_acpi().unwrap());
 
+#[allow(dead_code)]
 pub struct Acpi {
     pub aml_engine: Interpreter<AcpiHandler>,
     pub serial_base: u64,

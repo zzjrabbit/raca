@@ -41,7 +41,7 @@ fn syscall_impl(process: &Arc<Process>, user_ctx: &mut UserContext) -> Result<us
 
     match id {
         0 => {
-            let mut buf = alloc::vec![0u8; arg2 as usize];
+            let mut buf = alloc::vec![0u8; arg2];
             process.root_vmar().read(arg1, &mut buf)?;
             let Ok(msg) = String::from_utf8(buf) else {
                 return Err(Errno::InvArg.no_message());
