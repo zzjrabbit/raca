@@ -7,7 +7,10 @@ use crate::{
     mem::Vmar,
     new_kobj,
     object::{Handle, KObjectBase, KernelObject, Rights},
-    task::{Thread, exception::page_fault_handler},
+    task::{
+        Thread,
+        exception::exception_handler,
+    },
 };
 
 pub struct Process {
@@ -78,16 +81,10 @@ impl Process {
         thread.start(move || {
             process.root_vmar().activate();
             let info = user_ctx.enter_user_space();
-            #[cfg(not(feature = "libos"))]
-            if matches!(info.code, 1..8) {
-                if page_fault_handler(&info).is_err() {
-                    log::error!("page fault handler failed, info: {:#x?}", info);
-                    kernel_hal::platform::idle_loop();
-                }
-            } else if info.code == 0xb {
+            if info.is_syscall() {
                 syscall_handler(&process, &mut user_ctx);
-            } else {
-                log::error!("unknown exception code: {}", info.code);
+            } else if exception_handler(&info).is_err() {
+                log::error!("Unhandled exception, info: {:#x?}", info);
                 kernel_hal::platform::idle_loop();
             }
         });

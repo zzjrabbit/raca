@@ -6,11 +6,11 @@ use loongarch64::{
     instructions::{interrupt, tlb},
     registers::{BadVirtAddr, ExceptionEntry, ExceptionStatus, TimerConfigBuilder, TimerIntClear},
 };
-use spin::Once;
 
 use crate::{
     arch::task::{GeneralRegs, UserContext},
-    mem::{USER_ASPACE_BASE, USER_ASPACE_SIZE},
+    mem::{MMUFlags, USER_ASPACE_BASE, USER_ASPACE_SIZE},
+    task::{PageFaultInfo, USER_PAGE_FAULT_HANDLER},
     timer::call_timer_callback_functions,
 };
 
@@ -92,18 +92,31 @@ pub fn disable_int() {
     interrupt::disable();
 }
 
-type PageFaultHandler = fn(&CpuExceptionInfo) -> core::result::Result<(), ()>;
-
-static USER_PAGE_FAULT_HANDLER: Once<PageFaultHandler> = Once::new();
-
 #[derive(Debug)]
 pub struct CpuExceptionInfo {
     pub code: usize,
     pub badv: crate::mem::VirtAddr,
 }
 
-/// Injects a custom handler for page faults that occur in the kernel and
-/// are caused by user-space address.
-pub fn inject_user_page_fault_handler(handler: PageFaultHandler) {
-    USER_PAGE_FAULT_HANDLER.call_once(|| handler);
+impl CpuExceptionInfo {
+    pub fn is_pf(&self) -> bool {
+        matches!(self.code, 1..=8)
+    }
+
+    pub fn is_syscall(&self) -> bool {
+        matches!(self.code, 0xb)
+    }
+
+    pub fn as_pf_info(&self) -> Option<PageFaultInfo> {
+        matches!(self.code, 1..=3).then_some(PageFaultInfo {
+            addr: self.badv,
+            flags: match self.code {
+                1 => MMUFlags::READ,
+                2 => MMUFlags::WRITE,
+                3 => MMUFlags::EXECUTE,
+                _ => unreachable!(),
+            },
+        })
+    }
 }
+

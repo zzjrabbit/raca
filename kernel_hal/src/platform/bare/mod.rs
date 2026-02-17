@@ -10,7 +10,7 @@ pub(crate) mod task;
 
 pub mod trap {
     pub use crate::arch::trap::{
-        CpuExceptionInfo, disable_int, enable_int, inject_user_page_fault_handler,
+        CpuExceptionInfo, disable_int, enable_int,
     };
 }
 

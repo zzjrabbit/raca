@@ -15,7 +15,7 @@ pub fn syscall_handler(process: &Arc<Process>, user_ctx: &mut UserContext) {
         Ok(ret) => ret as isize,
         Err(err) => {
             log::warn!("syscall error: {}", err);
-            -(err.errno() as isize)
+            i32::from(err) as isize
         }
     };
 

@@ -1,5 +1,7 @@
 use core::arch::naked_asm;
 
+use super::trap::CpuExceptionInfo;
+
 /// User space context
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
 #[repr(C)]
@@ -110,9 +112,12 @@ impl UserContext {
         self.error_code = 0;
     }
 
-    pub fn enter_user_space(&mut self) {
+    pub fn enter_user_space(&mut self) -> CpuExceptionInfo {
         #[cfg(feature = "libos")]
-        self.run_fncall();
+        {
+            self.run_fncall();
+            CpuExceptionInfo
+        }
         #[cfg(not(feature = "libos"))]
         unimplemented!()
     }
