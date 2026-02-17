@@ -4,7 +4,10 @@ pub fn init() {
 
 use {
     crate::task::Process,
-    kernel_hal::{platform::trap::CpuExceptionInfo, task::{PageFaultInfo, inject_user_page_fault_handler}},
+    kernel_hal::{
+        platform::trap::CpuExceptionInfo,
+        task::{PageFaultInfo, inject_user_page_fault_handler},
+    },
 };
 
 pub(super) fn exception_handler(info: &CpuExceptionInfo) -> Result<(), ()> {

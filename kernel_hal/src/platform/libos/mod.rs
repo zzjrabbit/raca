@@ -1,4 +1,5 @@
 pub(crate) mod mem;
+pub mod power;
 pub mod task;
 
 pub use crate::arch::trap;

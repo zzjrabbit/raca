@@ -7,10 +7,7 @@ use crate::{
     mem::Vmar,
     new_kobj,
     object::{Handle, KObjectBase, KernelObject, Rights},
-    task::{
-        Thread,
-        exception::exception_handler,
-    },
+    task::{Thread, exception::exception_handler},
 };
 
 pub struct Process {

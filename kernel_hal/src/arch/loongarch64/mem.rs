@@ -35,6 +35,27 @@ pub fn current_page_table() -> OffsetPageTable<'static> {
     unsafe { OffsetPageTable::new(&mut *lower_half, &mut *higher_half, physical_memory_offset) }
 }
 
+pub fn flush_cache(address: VirtAddr) {
+    macro_rules! cacop {
+        ($id: literal) => {
+            concat!("cacop 0b10", $id, ", {0}, 0")
+        };
+    }
+    unsafe {
+        core::arch::asm!(
+            cacop!("000"),
+            cacop!("001"),
+            cacop!("010"),
+            cacop!("011"),
+            cacop!("100"),
+            cacop!("101"),
+            cacop!("110"),
+            cacop!("111"),
+            in(reg) address,
+        );
+    }
+}
+
 fn kernel_property_converter(property: crate::mem::PageProperty) -> PageProperty {
     let mut result = PageProperty::new();
 
@@ -117,14 +138,13 @@ fn loongarch64_property_converter(
         let privilege_restriction = property.privilege_restriction();
         match privilege_level {
             PrivilegeLevel::Privilege0 => Privilege::KernelOnly,
-            PrivilegeLevel::Privilege3 => {
+            _ => {
                 if privilege_restriction {
                     Privilege::UserOnly
                 } else {
                     Privilege::User
                 }
             }
-            _ => unreachable!(),
         }
     };
 
@@ -247,6 +267,7 @@ impl GeneralPageTable for OffsetPageTable<'_> {
         let Ok((_, _, page_size)) = self.query(vaddr) else {
             return Err(Errno::InvArg.with_message("Updating unmapped page."));
         };
+        log::debug!("page size: {:#?}", page_size);
 
         let vaddr = Vaddr::new(page_size.align_down(vaddr) as u64);
         let property = kernel_property_converter(property);

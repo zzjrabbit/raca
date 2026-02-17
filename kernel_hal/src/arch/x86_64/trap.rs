@@ -11,11 +11,11 @@ impl CpuExceptionInfo {
     pub fn is_syscall(&self) -> bool {
         true
     }
-    
+
     pub fn is_pf(&self) -> bool {
         false
     }
-    
+
     pub fn as_pf_info(&self) -> Option<PageFaultInfo> {
         None
     }

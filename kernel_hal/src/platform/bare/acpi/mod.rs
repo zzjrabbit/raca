@@ -1,4 +1,11 @@
-use acpi::{AcpiError, AcpiTables, aml::Interpreter, platform::AcpiPlatform, sdt::spcr::Spcr};
+use acpi::{
+    AcpiError, AcpiTables,
+    aml::Interpreter,
+    platform::AcpiPlatform,
+    registers::FixedRegisters,
+    sdt::{fadt::Fadt, spcr::Spcr},
+};
+use alloc::sync::Arc;
 use limine::request::RsdpRequest;
 use spin::lazy::Lazy;
 
@@ -6,6 +13,7 @@ use crate::{mem::VirtAddr, platform::mem::virt_to_phys};
 use handler::AcpiHandler;
 
 mod handler;
+pub mod power;
 
 #[used]
 #[unsafe(link_section = ".requests")]
@@ -17,7 +25,12 @@ pub static ACPI: Lazy<Acpi> = Lazy::new(|| init_acpi().unwrap());
 pub struct Acpi {
     pub aml_engine: Interpreter<AcpiHandler>,
     pub serial_base: u64,
+    pub fadt: Fadt,
+    pub registers: Arc<FixedRegisters<AcpiHandler>>,
 }
+
+unsafe impl Send for Acpi {}
+unsafe impl Sync for Acpi {}
 
 fn init_acpi() -> Result<Acpi, AcpiError> {
     let response = RSDP_REQUEST.get_response().unwrap();
@@ -32,9 +45,12 @@ fn init_acpi() -> Result<Acpi, AcpiError> {
 
     let acpi_tables = &platform_info.tables;
     let spcr = acpi_tables.find_table::<Spcr>().unwrap();
+    let fadt = *acpi_tables.find_table::<Fadt>().unwrap();
 
     Ok(Acpi {
         aml_engine,
         serial_base: spcr.base_address().unwrap()?.address,
+        fadt,
+        registers: platform_info.registers.clone(),
     })
 }

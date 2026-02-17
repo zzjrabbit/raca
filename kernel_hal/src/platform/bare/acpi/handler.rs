@@ -2,8 +2,8 @@ use acpi::aml::AmlError;
 use acpi::{PciAddress, PhysicalMapping};
 use core::ptr::NonNull;
 
-use crate::mem::PhysAddr;
-use crate::mem::phys_to_virt;
+use crate::arch::mem::flush_cache;
+use crate::mem::{PhysAddr, VirtAddr, phys_to_virt};
 
 #[derive(Clone, Copy)]
 pub struct AcpiHandler;
@@ -12,13 +12,17 @@ impl AcpiHandler {
     fn read<T>(&self, address: usize) -> T {
         let address = address as PhysAddr;
         let address: *const T = phys_to_virt(address) as *const T;
+        flush_cache(address as VirtAddr);
         unsafe { address.read_volatile() }
     }
 
     fn write<T>(&self, address: usize, value: T) {
         let address = address as PhysAddr;
         let address: *mut T = phys_to_virt(address) as *mut T;
-        unsafe { address.write_volatile(value) }
+        unsafe {
+            address.write_volatile(value);
+        }
+        flush_cache(address as VirtAddr);
     }
 
     fn read_io<T>(&self, _port: u16) -> T {
