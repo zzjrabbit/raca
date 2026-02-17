@@ -1,8 +1,10 @@
 pub use crate::arch::task::UserContext;
 pub use crate::platform::task::{HwThread, launch_multitask};
 pub use exception::*;
+pub use user::*;
 
 mod exception;
+mod user;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ThreadState {

@@ -2,10 +2,17 @@
 
 extern crate alloc;
 
-use alloc::{string::String, sync::Arc};
+use alloc::sync::Arc;
 use errors::{Errno, Result};
 use kernel_hal::task::UserContext;
 use object::task::Process;
+
+use crate::{debug::debug, ipc::new_channel};
+
+mod debug;
+mod ipc;
+
+type SyscallResult = Result<usize>;
 
 pub fn syscall_handler(process: &Arc<Process>, user_ctx: &mut UserContext) {
     let [arg1, arg2, arg3, arg4, arg5, arg6] = user_ctx.get_syscall_args();
@@ -40,15 +47,8 @@ fn syscall_impl(process: &Arc<Process>, user_ctx: &mut UserContext) -> Result<us
     let id = user_ctx.get_syscall_num();
 
     match id {
-        0 => {
-            let mut buf = alloc::vec![0u8; arg2];
-            process.root_vmar().read(arg1, &mut buf)?;
-            let Ok(msg) = String::from_utf8(buf) else {
-                return Err(Errno::InvArg.no_message());
-            };
-            log::info!("USER DEBUG: {}", msg);
-        }
-        _ => {}
+        0 => debug(process, arg1, arg2),
+        1 => new_channel(process, arg1, arg2),
+        _ => Err(Errno::InvSyscall.no_message()),
     }
-    Ok(0)
 }

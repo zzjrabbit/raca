@@ -13,5 +13,5 @@ macro_rules! gen_syscall {
 
 gen_syscall! {
     fn sys_debug (0usize) (ptr: *const u8, len: usize);
-    fn sys_empty (1usize) ();
+    fn sys_new_channel (1usize) (handle0_ptr: *mut u32, handle1_ptr: *mut u32);
 }

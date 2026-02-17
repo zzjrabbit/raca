@@ -1,5 +1,8 @@
 use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
-use kernel_hal::{mem::VirtAddr, task::UserContext};
+use kernel_hal::{
+    mem::{Pod, VirtAddr},
+    task::{ReturnReason, UserContext},
+};
 use spin::lock_api::Mutex;
 
 use crate::{
@@ -22,7 +25,9 @@ struct ProcessInner {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(transparent)]
 pub struct HandleId(u32);
+unsafe impl Pod for HandleId {}
 
 impl_kobj!(Process);
 
@@ -77,12 +82,18 @@ impl Process {
         let process = self.clone();
         thread.start(move || {
             process.root_vmar().activate();
-            let info = user_ctx.enter_user_space();
-            if info.is_syscall() {
-                syscall_handler(&process, &mut user_ctx);
-            } else if exception_handler(&info).is_err() {
-                log::error!("Unhandled exception, info: {:#x?}", info);
-                kernel_hal::platform::idle_loop();
+            let reason = user_ctx.enter_user_space();
+            match reason {
+                ReturnReason::Int(_) => {}
+                ReturnReason::Syscall => {
+                    syscall_handler(&process, &mut user_ctx);
+                }
+                ReturnReason::Exception(info) => {
+                    if exception_handler(&info).is_err() {
+                        log::error!("Unhandled exception, info: {:#x?}", info);
+                        kernel_hal::platform::idle_loop();
+                    }
+                }
             }
         });
     }

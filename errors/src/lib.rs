@@ -75,4 +75,5 @@ pub enum Errno {
     PageFault = 11,
     TooBig = 12,
     MapFailed = 13,
+    InvSyscall = 14,
 }
