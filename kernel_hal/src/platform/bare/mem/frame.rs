@@ -22,10 +22,11 @@ pub(crate) static FRAME_ALLOCATOR: Lazy<Mutex<BitmapFrameAllocator>> = Lazy::new
         .iter()
         .filter(|region| region.entry_type == EntryType::USABLE);
 
-    let bitmap_address = usable_regions
+    let (index, bitmap_address) = usable_regions
         .clone()
-        .find(|region| region.length >= bitmap_size as u64)
-        .map(|region| region.base)
+        .enumerate()
+        .find(|(_, region)| region.length >= bitmap_size as u64)
+        .map(|(id, region)| (id, region.base))
         .expect("No suitable memory region for bitmap");
 
     let bitmap_buffer = unsafe {
@@ -34,26 +35,17 @@ pub(crate) static FRAME_ALLOCATOR: Lazy<Mutex<BitmapFrameAllocator>> = Lazy::new
         let bitmap_inner_size = bitmap_size / size_of::<usize>();
         core::slice::from_raw_parts_mut(virtual_address as *mut usize, bitmap_inner_size)
     };
+    bitmap_buffer.fill(0);
 
-    let mut origin_frames = 0;
+    let mut allocator = BitmapFrameAllocator::new(bitmap_buffer);
 
-    for region in usable_regions.clone() {
+    for (id, region) in usable_regions.enumerate() {
+        if id == index {
+            continue;
+        }
         let frame_count = (region.length / 4096) as usize;
 
-        origin_frames += frame_count;
-    }
-
-    let bitmap_frame_count = bitmap_size.div_ceil(4096);
-
-    let usable_frames = origin_frames - bitmap_frame_count;
-
-    let mut allocator = BitmapFrameAllocator::new(bitmap_buffer, usable_frames);
-
-    for region in usable_regions {
-        let start_page_index = (region.base / 4096) as usize;
-        let frame_count = (region.length / 4096) as usize;
-
-        allocator.deallocate_frames(start_page_index, frame_count);
+        allocator.deallocate_frames(region.base as usize, frame_count);
     }
 
     Mutex::new(allocator)

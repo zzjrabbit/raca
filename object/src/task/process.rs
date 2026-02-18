@@ -1,8 +1,9 @@
 use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
 use kernel_hal::{
-    mem::{Pod, VirtAddr},
+    mem::VirtAddr,
     task::{ReturnReason, UserContext},
 };
+use pod::derive;
 use spin::lock_api::Mutex;
 
 use crate::{
@@ -24,10 +25,19 @@ struct ProcessInner {
     handles: BTreeMap<HandleId, Handle>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Pod)]
 #[repr(transparent)]
 pub struct HandleId(u32);
-unsafe impl Pod for HandleId {}
+
+impl HandleId {
+    pub fn from_raw(raw: u32) -> Self {
+        Self(raw)
+    }
+
+    pub fn as_raw(&self) -> u32 {
+        self.0
+    }
+}
 
 impl_kobj!(Process);
 
@@ -111,9 +121,29 @@ impl Process {
         id
     }
 
-    pub fn remove_handle(&self, id: HandleId) {
+    pub fn remove_handle(&self, id: HandleId) -> Result<Handle> {
         let mut inner = self.inner.lock();
-        inner.handles.remove(&id);
+        inner
+            .handles
+            .remove(&id)
+            .ok_or(Errno::BadHandle.with_message("Handle not found!"))
+    }
+
+    pub fn remove_handle_with_rights(
+        &self,
+        id: HandleId,
+        desired_rights: Rights,
+    ) -> Result<Handle> {
+        let mut inner = self.inner.lock();
+        let handle = inner
+            .handles
+            .remove(&id)
+            .ok_or(Errno::BadHandle.with_message("Handle not found!"))?;
+        if handle.rights.contains(desired_rights) {
+            Ok(handle)
+        } else {
+            Err(Errno::AccessDenied.with_message("Handle does not have the desired rights!"))
+        }
     }
 
     pub fn add_thread(&self, thread: Arc<Thread>) {
@@ -166,7 +196,7 @@ mod tests {
         let proc = Process::new();
         let handle = proc.add_handle(Handle::new(proc.clone().upcast(), Rights::READ));
         assert_eq!(handle, HandleId(0));
-        proc.remove_handle(handle);
+        proc.remove_handle(handle).unwrap();
     }
 
     #[test]

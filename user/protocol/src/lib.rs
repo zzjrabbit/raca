@@ -1,9 +1,27 @@
 #![no_std]
 
+use pod::derive;
+
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
-pub struct ProcStartInfo {
-    pub elf_base: usize,
-    pub elf_size: usize,
-    pub load_base: usize,
+#[derive(Debug, Clone, Copy, Pod)]
+pub struct ProcessStartInfo {
+    pub channel: u32,
+    pub vmar: u32,
+    pub vmar_base: usize,
+    pub vmar_size: usize,
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy, Pod)]
+pub struct ReadBuffer {
+    pub addr: usize,
+    pub len: usize,
+    pub actual_len_addr: usize,
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy, Pod)]
+pub struct WriteBuffer {
+    pub addr: usize,
+    pub len: usize,
 }

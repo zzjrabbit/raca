@@ -9,7 +9,7 @@ members = [
     "user/ustd", 
     "syscall",
     "user/protocol", 
-    "user/user_boot",
+    "user/user_boot", "crates/pod", "crates/pod-macros",
 ]
 default-members = ["builder"]
 resolver = "3"
@@ -32,3 +32,5 @@ spin = "0.10.0"
 tokio = { version = "1.49.0", features = ["macros", "rt", "rt-multi-thread"] }
 errors = { path = "./errors" }
 ustd = { path = "./user/ustd" }
+zerocopy = { version = "0.8.39", features = ["derive"] }
+pod = { path = "./crates/pod" }

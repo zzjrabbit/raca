@@ -1,5 +1,5 @@
 use errors::Errno;
-use kernel_hal::mem::Pod;
+use pod::Pod;
 
 use crate::Result;
 use crate::mem::align_down_by_page_size;
@@ -56,8 +56,8 @@ impl Vmo {
     }
 
     pub fn read_val<T: Pod>(&self, offset: usize) -> Result<T> {
-        let mut value = T::new_uninit();
-        let buffer = value.as_bytes_mut();
+        let mut value = T::new_zeroed();
+        let buffer = value.as_mut_bytes();
         self.read_bytes(offset, buffer)?;
         Ok(value)
     }

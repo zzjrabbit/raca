@@ -42,7 +42,7 @@ impl Vmar {
                 } else if perm_required.contains(MMUFlags::WRITE)
                     && !prop.flags.contains(MMUFlags::WRITE)
                 {
-                    log::info!("CoW");
+                    log::debug!("CoW");
                     // Perform CoW.
                     prop.flags |= MMUFlags::WRITE;
                     mapping.set_prop(prop);

@@ -1,4 +1,4 @@
-use loongarch64::registers::{BadVirtAddr, ExceptionStatus};
+use loongarch64::registers::{BadVirtAddr, ExceptionStatus, TimerIntClear};
 
 use crate::{
     arch::trap::{CpuExceptionInfo, run_user},
@@ -73,7 +73,10 @@ impl UserContext {
         }
         let ecode = ExceptionStatus.read_ecode();
         match ecode {
-            0 => ReturnReason::Int(0),
+            0 => {
+                TimerIntClear.write(1);
+                ReturnReason::Int(0)
+            }
             0xb => {
                 self.era += 4;
                 ReturnReason::Syscall

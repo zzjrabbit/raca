@@ -1,6 +1,7 @@
 use core::ops::Range;
 
-use crate::{Errno, Result};
+use crate::object::KObjectBase;
+use crate::{Errno, Result, impl_kobj, new_kobj};
 use alloc::{sync::Arc, vec::Vec};
 use kernel_hal::mem::{
     KERNEL_ASPACE_BASE, KERNEL_ASPACE_SIZE, MMUFlags, PageProperty, VirtAddr, VmSpace,
@@ -21,10 +22,13 @@ pub struct Vmar {
     vm_space: Arc<VmSpace>,
     inner: RwLock<VmarInner>,
     lock: Mutex<()>,
-    base: VirtAddr,
+    base_addr: VirtAddr,
     size: usize,
     is_root: bool,
+    base: KObjectBase,
 }
+
+impl_kobj!(Vmar);
 
 #[derive(Debug)]
 struct VmarInner {
@@ -33,21 +37,29 @@ struct VmarInner {
 }
 
 impl Vmar {
+    #[cfg(not(feature = "libos"))]
     pub fn new_root() -> Arc<Self> {
-        static ROOT: Lazy<Arc<Vmar>> = Lazy::new(|| {
-            Arc::new(Vmar {
-                vm_space: Arc::new(VmSpace::new_user()),
-                inner: RwLock::new(VmarInner {
-                    vm_mappings: Vec::new(),
-                    children: Vec::new(),
-                }),
-                lock: Mutex::new(()),
-                base: USER_ASPACE_BASE,
-                size: USER_ASPACE_SIZE,
-                is_root: true,
-            })
-        });
+        Vmar::new_root_impl()
+    }
+
+    #[cfg(feature = "libos")]
+    pub fn new_root() -> Arc<Self> {
+        static ROOT: Lazy<Arc<Vmar>> = Lazy::new(|| Vmar::new_root_impl());
         ROOT.clone()
+    }
+
+    fn new_root_impl() -> Arc<Self> {
+        new_kobj!({
+            vm_space: Arc::new(VmSpace::new_user()),
+            inner: RwLock::new(VmarInner {
+                vm_mappings: Vec::new(),
+                children: Vec::new(),
+            }),
+            lock: Mutex::new(()),
+            base_addr: USER_ASPACE_BASE,
+            size: USER_ASPACE_SIZE,
+            is_root: true,
+        })
     }
 
     pub fn kernel() -> Arc<Self> {
@@ -59,9 +71,10 @@ impl Vmar {
                     children: Vec::new(),
                 }),
                 lock: Mutex::new(()),
-                base: KERNEL_ASPACE_BASE,
+                base_addr: KERNEL_ASPACE_BASE,
                 size: KERNEL_ASPACE_SIZE,
                 is_root: true,
+                base: KObjectBase::default(),
             })
         });
         KERNEL.clone()
@@ -74,7 +87,7 @@ impl Vmar {
     }
 
     pub fn base(&self) -> VirtAddr {
-        self.base
+        self.base_addr
     }
 
     pub fn size(&self) -> usize {
@@ -82,7 +95,7 @@ impl Vmar {
     }
 
     pub fn end(&self) -> VirtAddr {
-        self.base + self.size
+        self.base() + self.size
     }
 
     pub fn page_count(&self) -> usize {
@@ -92,15 +105,15 @@ impl Vmar {
 
 impl Vmar {
     fn add_child(&self, base: VirtAddr, size: usize) -> Result<Arc<Self>> {
-        log::info!("adding child: base={:#x} size={:#x}", base, size);
-        let child = Arc::new(Self {
+        log::debug!("adding child: base={:#x} size={:#x}", base, size);
+        let child = new_kobj!({
             vm_space: self.vm_space.clone(),
             inner: RwLock::new(VmarInner {
                 vm_mappings: Vec::new(),
                 children: Vec::new(),
             }),
             lock: Mutex::new(()),
-            base,
+            base_addr: base,
             size,
             is_root: false,
         });
@@ -193,7 +206,7 @@ impl Vmar {
     pub fn map(
         &self,
         offset: usize,
-        vmo: &Vmo,
+        vmo: &Arc<Vmo>,
         prop: PageProperty,
         process_overlap: bool,
     ) -> Result<()> {
@@ -421,14 +434,14 @@ impl Vmar {
             }
         }
 
-        Ok(Arc::new(Self {
+        Ok(new_kobj!({
             vm_space: Arc::new(VmSpace::new_user()),
             inner: RwLock::new(VmarInner {
                 vm_mappings,
                 children: Vec::new(),
             }),
             lock: Mutex::new(()),
-            base: self.base,
+            base_addr: self.base(),
             size: self.size,
             is_root: true,
         }))
@@ -437,11 +450,11 @@ impl Vmar {
 
 impl Vmar {
     fn contains(&self, address: VirtAddr) -> bool {
-        address >= self.base && address < self.base + self.size
+        address >= self.base() && address < self.end()
     }
 
     pub fn contains_range(&self, address: VirtAddr, size: usize) -> bool {
-        address >= self.base && address + size <= self.end()
+        address >= self.base() && address + size <= self.end()
     }
 
     fn overlap_range(&self, start: VirtAddr, size: usize) -> bool {
@@ -550,7 +563,7 @@ mod tests {
             )
             .unwrap();
         let address = child.base();
-        log::info!("address: {:#x}", address);
+        log::debug!("address: {:#x}", address);
 
         child.protect(address, 4 * 1024, MMUFlags::WRITE).unwrap();
 

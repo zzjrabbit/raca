@@ -103,10 +103,6 @@ impl CpuExceptionInfo {
         matches!(self.code, 1..=8)
     }
 
-    pub fn is_syscall(&self) -> bool {
-        matches!(self.code, 0xb)
-    }
-
     pub fn as_pf_info(&self) -> Option<PageFaultInfo> {
         matches!(self.code, 1..=3).then_some(PageFaultInfo {
             addr: self.badv,

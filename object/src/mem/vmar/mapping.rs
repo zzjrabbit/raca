@@ -1,11 +1,12 @@
 use crate::{Errno, Result};
+use alloc::sync::Arc;
 use kernel_hal::mem::{MMUFlags, PageProperty, VirtAddr};
 
 use super::{PAGE_SIZE, Vmo, align_down_by_page_size};
 
 #[derive(Debug)]
 pub struct VmMapping {
-    vmo: Vmo,
+    vmo: Arc<Vmo>,
     start: VirtAddr,
     size: usize,
     prop: PageProperty,
@@ -13,7 +14,13 @@ pub struct VmMapping {
 }
 
 impl VmMapping {
-    pub fn new(vmo: Vmo, start: VirtAddr, size: usize, prop: PageProperty, perm: MMUFlags) -> Self {
+    pub fn new(
+        vmo: Arc<Vmo>,
+        start: VirtAddr,
+        size: usize,
+        prop: PageProperty,
+        perm: MMUFlags,
+    ) -> Self {
         VmMapping {
             vmo,
             start,
@@ -26,11 +33,11 @@ impl VmMapping {
 
 #[allow(dead_code)]
 impl VmMapping {
-    pub fn vmo(&self) -> &Vmo {
+    pub fn vmo(&self) -> &Arc<Vmo> {
         &self.vmo
     }
 
-    pub fn vmo_mut(&mut self) -> &mut Vmo {
+    pub fn vmo_mut(&mut self) -> &mut Arc<Vmo> {
         &mut self.vmo
     }
 

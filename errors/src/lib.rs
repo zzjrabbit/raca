@@ -1,8 +1,12 @@
 #![no_std]
+#![feature(variant_count)]
 
 extern crate alloc;
 
-use core::fmt::{Debug, Display};
+use core::{
+    fmt::{Debug, Display},
+    mem::variant_count,
+};
 
 use alloc::string::String;
 
@@ -41,7 +45,22 @@ impl Error {
 
 impl From<Error> for i32 {
     fn from(error: Error) -> Self {
-        error.errno as i32
+        -(error.errno as i32)
+    }
+}
+
+impl TryFrom<i32> for Error {
+    type Error = ();
+    fn try_from(errno: i32) -> ::core::result::Result<Self, Self::Error> {
+        let errno = -errno;
+        if errno as usize > variant_count::<Errno>() {
+            Err(())
+        } else {
+            Ok(Self {
+                errno: unsafe { core::mem::transmute(errno) },
+                message: String::new(),
+            })
+        }
     }
 }
 

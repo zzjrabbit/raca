@@ -27,12 +27,12 @@ impl<T: KernelObject> Upcast for T {
     }
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct KObjectBase {
     inner: Mutex<KObjectBaseInner>,
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 struct KObjectBaseInner {
     name: String,
 }

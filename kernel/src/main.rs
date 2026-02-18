@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 
+use alloc::vec::Vec;
 use elf::{
     ElfBytes,
     abi::{PF_R, PF_W, PF_X, PT_LOAD, SHT_RELA},
@@ -12,12 +13,15 @@ use kernel_hal::{
 };
 use limine::BaseRevision;
 use object::{
+    ipc::{Channel, MessagePacket},
     mem::{PAGE_SIZE, Vmo, align_up_by_page_size},
+    object::{Handle, Rights},
     task::Process,
 };
+use protocol::ProcessStartInfo;
 use syscall::syscall_handler;
 
-use crate::stack::new_user_stack;
+use crate::stack::{new_user_stack, push_stack};
 
 extern crate alloc;
 
@@ -122,15 +126,41 @@ pub extern "C" fn kmain() -> ! {
     log::debug!("entry: {:#x}", entry_point);
 
     let stack = new_user_stack(process.root_vmar().clone()).unwrap();
+    let mut stack_ptr = stack.end();
+
+    log::debug!("pushing handles");
+
+    let (kernel_endpoint, user_endpoint) = Channel::new();
+    let channel = process.add_handle(Handle::new(user_endpoint, Rights::READ));
+    let vmar_handle = process.add_handle(Handle::new(vmar.clone(), Rights::VMAR));
+
+    let proc_info = ProcessStartInfo {
+        channel: channel.as_raw(),
+        vmar: vmar_handle.as_raw(),
+        vmar_base: vmar.base(),
+        vmar_size: vmar.size(),
+    };
+    let proc_info_ptr = push_stack(stack, &mut stack_ptr, &proc_info);
+
+    log::info!("Staring user boot with info: {:#x?}", proc_info);
 
     let thread = process.new_thread();
     process.start(
         thread.clone(),
         entry_point,
-        stack.end(),
-        |_| {},
+        stack_ptr,
+        |ctx| {
+            ctx.set_first_arg(proc_info_ptr);
+        },
         syscall_handler,
     );
+
+    kernel_endpoint
+        .write(MessagePacket {
+            data: Vec::from(b"Hello, World"),
+            handles: Vec::new(),
+        })
+        .unwrap();
 
     launch_multitask();
 

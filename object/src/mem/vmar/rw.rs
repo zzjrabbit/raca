@@ -1,11 +1,54 @@
 use crate::{Errno, Result, mem::Vmar};
 use alloc::{ffi::CString, vec::Vec};
-use kernel_hal::mem::{Pod, VirtAddr};
+use kernel_hal::mem::VirtAddr;
+use pod::Pod;
 
 impl Vmar {
+    pub fn read_array<T: Pod>(&self, address: usize, len: usize) -> Result<Vec<T>> {
+        let mut buffer = Vec::with_capacity(len);
+        for id in 0..len {
+            let value = self.read_val::<T>(address + id * size_of::<T>())?;
+            buffer.push(value);
+        }
+        Ok(buffer)
+    }
+
+    pub fn read_array_map<T: Pod, R>(
+        &self,
+        address: usize,
+        len: usize,
+        f: impl Fn(T) -> Result<R>,
+    ) -> Result<Vec<R>> {
+        let mut buffer = Vec::with_capacity(len);
+        for id in 0..len {
+            let value = self.read_val::<T>(address + id * size_of::<T>())?;
+            buffer.push(f(value)?);
+        }
+        Ok(buffer)
+    }
+
+    pub fn write_array<T: Pod>(&self, address: usize, data: &[T]) -> Result<()> {
+        for (id, value) in data.iter().enumerate() {
+            self.write_val(address + id * size_of::<T>(), value)?;
+        }
+        Ok(())
+    }
+
+    pub fn write_array_map<T, R: Pod>(
+        &self,
+        address: usize,
+        data: &[T],
+        f: impl Fn(&T) -> Result<R>,
+    ) -> Result<()> {
+        for (id, value) in data.iter().enumerate() {
+            self.write_val(address + id * size_of::<T>(), &f(value)?)?;
+        }
+        Ok(())
+    }
+
     pub fn read_val<T: Pod>(&self, address: usize) -> Result<T> {
-        let mut buffer = T::new_uninit();
-        self.read(address, buffer.as_bytes_mut())?;
+        let mut buffer = T::new_zeroed();
+        self.read(address, buffer.as_mut_bytes())?;
         Ok(buffer)
     }
 

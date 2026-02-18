@@ -13,16 +13,6 @@ pub fn init() {
     exception::init();
 
     let idle = Thread::new(Weak::new());
-    idle.start(|| {
-        #[cfg(feature = "libos")]
-        {
-            extern crate std;
-            std::thread::sleep(std::time::Duration::from_millis(100));
-        }
-        #[cfg(not(feature = "libos"))]
-        {
-            kernel_hal::platform::idle_ins();
-        }
-    });
+    idle.start(|| {});
     IDLE.call_once(|| idle.clone());
 }

@@ -21,7 +21,7 @@ pub fn do_run(args: RunArgs) -> Result<()> {
 
     let mut cmd = Command::new(format!("qemu-system-{}", arch));
     cmd.arg("-machine").arg("virt");
-    cmd.arg("-m").arg("512m");
+    cmd.arg("-m").arg("1g");
     cmd.arg("-smp").arg(format!("cores={}", cores));
     cmd.arg("-cpu").arg("la464");
 

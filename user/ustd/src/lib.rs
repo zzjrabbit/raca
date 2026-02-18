@@ -1,27 +1,20 @@
 #![no_std]
 #![feature(rustc_private)]
 
-use protocol::ProcStartInfo;
+use errors::Result;
 
+extern crate alloc;
+
+pub mod ipc;
+pub mod os;
 pub mod syscall;
+pub mod vm;
 
-pub fn debug(msg: &str) {
+pub fn debug(msg: &str) -> Result<()> {
     unsafe {
-        syscall::sys_debug(msg.as_ptr(), msg.len());
+        syscall::sys_debug(msg.as_ptr(), msg.len())?;
     }
-}
-
-unsafe extern "C" {
-    fn main() -> i32;
-}
-
-#[unsafe(no_mangle)]
-extern "C" fn _start(_info: *const ProcStartInfo) -> ! {
-    unsafe {
-        main();
-    }
-
-    loop {}
+    Ok(())
 }
 
 pub fn dummy() {}

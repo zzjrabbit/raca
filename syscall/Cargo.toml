@@ -8,3 +8,4 @@ errors.workspace = true
 kernel_hal = { path = "../kernel_hal", default-features = false }
 log.workspace = true
 object = { path = "../object", default-features = false }
+protocol = { version = "0.2.0", path = "../user/protocol" }

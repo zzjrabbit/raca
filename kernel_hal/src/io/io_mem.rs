@@ -2,8 +2,9 @@ use core::ops::Range;
 
 use alloc::sync::Arc;
 use errors::Error;
+use pod::Pod;
 
-use crate::mem::{Pod, VirtAddr, VmSpace, phys_to_virt};
+use crate::mem::{VirtAddr, VmSpace, phys_to_virt};
 
 #[derive(Debug)]
 pub struct IoMem {
@@ -18,7 +19,7 @@ impl IoMem {
         let size = range.end - range.start;
 
         let start_address = phys_to_virt(start);
-        log::info!("start address: {:x}", start_address);
+        log::debug!("start address: {:x}", start_address);
 
         Ok(Arc::new(IoMem {
             start_address,

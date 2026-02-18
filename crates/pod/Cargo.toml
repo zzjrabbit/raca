@@ -1,0 +1,12 @@
+[package]
+name = "pod"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+pod-macros = { path = "../pod-macros" }
+zerocopy.workspace = true
+
+[features]
+default = ["macros"]
+macros = []

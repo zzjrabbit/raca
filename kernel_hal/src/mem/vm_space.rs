@@ -1,7 +1,8 @@
-use core::{fmt::Debug, mem::MaybeUninit};
+use core::fmt::Debug;
 
 use alloc::sync::Arc;
 use errors::{Errno, Result};
+use pod::Pod;
 use spin::{Lazy, RwLock};
 
 use crate::io::IoMem;
@@ -270,7 +271,7 @@ impl VmReader {
     /// Read data from the virtual memory space into the buffer.
     /// The virtual memory space doesn't necessarily have to be the current one.
     pub fn read<T: Pod>(&self, buffer: &mut T) -> Result<()> {
-        let buffer = buffer.as_bytes_mut();
+        let buffer = buffer.as_mut_bytes();
 
         self.read_bytes(buffer)
     }
@@ -323,57 +324,3 @@ impl VmWriter {
         self.write_bytes(buffer)
     }
 }
-
-/// Marker trait.
-/// # Safety
-/// This trait is only safe when you are SURE that the structure is plain.
-pub unsafe trait Pod: Copy + Sized {
-    /// Creates a new instance of Pod type that is filled with zeroes.
-    fn new_zeroed() -> Self {
-        // SAFETY. An all-zero value of `T: Pod` is always valid.
-        unsafe { core::mem::zeroed() }
-    }
-
-    /// Creates a new instance of Pod type with uninitialized content.
-    fn new_uninit() -> Self {
-        // SAFETY. A value of `T: Pod` can have arbitrary bits.
-        #[allow(clippy::uninit_assumed_init)]
-        unsafe {
-            MaybeUninit::uninit().assume_init()
-        }
-    }
-
-    /// Creates a new instance from the given bytes.
-    fn from_bytes(bytes: &[u8]) -> Self {
-        let mut new_self = Self::new_uninit();
-        let copy_len = new_self.as_bytes().len();
-        new_self.as_bytes_mut().copy_from_slice(&bytes[..copy_len]);
-        new_self
-    }
-
-    /// As a slice of bytes.
-    fn as_bytes(&self) -> &[u8] {
-        let ptr = self as *const Self as *const u8;
-        let len = core::mem::size_of::<Self>();
-        unsafe { core::slice::from_raw_parts(ptr, len) }
-    }
-
-    /// As a mutable slice of bytes.
-    fn as_bytes_mut(&mut self) -> &mut [u8] {
-        let ptr = self as *mut Self as *mut u8;
-        let len = core::mem::size_of::<Self>();
-        unsafe { core::slice::from_raw_parts_mut(ptr, len) }
-    }
-}
-
-macro_rules! impl_pod_for {
-    ($($pod_ty:ty),*) => {
-        $(unsafe impl Pod for $pod_ty {})*
-    };
-}
-// impl Pod for primitive types
-impl_pod_for!(
-    u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, isize, usize
-);
-// impl Pod for array
-unsafe impl<T: Pod, const N: usize> Pod for [T; N] {}

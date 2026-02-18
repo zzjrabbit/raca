@@ -548,6 +548,8 @@ dependencies = [
  "limine",
  "log",
  "object",
+ "pod",
+ "protocol",
  "syscall",
 ]
 
@@ -565,6 +567,7 @@ dependencies = [
  "loongarch64",
  "nix",
  "pastey",
+ "pod",
  "spin",
  "talc",
  "tempfile",
@@ -686,7 +689,9 @@ dependencies = [
  "errors",
  "kernel_hal",
  "log",
+ "pod",
  "spin",
+ "zerocopy",
 ]
 
 [[package]]
@@ -749,6 +754,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
 
 [[package]]
+name = "pod"
+version = "0.2.0"
+dependencies = [
+ "pod-macros",
+ "zerocopy",
+]
+
+[[package]]
+name = "pod-macros"
+version = "0.2.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "prettyplease"
 version = "0.2.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -770,6 +792,10 @@ dependencies = [
 [[package]]
 name = "protocol"
 version = "0.2.0"
+dependencies = [
+ "pod",
+ "zerocopy",
+]
 
 [[package]]
 name = "quote"
@@ -998,6 +1024,7 @@ dependencies = [
  "kernel_hal",
  "log",
  "object",
+ "protocol",
 ]
 
 [[package]]
@@ -1117,7 +1144,11 @@ dependencies = [
 name = "ustd"
 version = "0.2.0"
 dependencies = [
+ "bitflags 2.11.0",
+ "errors",
  "protocol",
+ "spin",
+ "talc",
 ]
 
 [[package]]
@@ -1517,6 +1548,26 @@ checksum = "32e45ad4206f6d2479085147f02bc2ef834ac85886624a23575ae137c8aa8156"
 dependencies = [
  "libc",
  "rustix",
+]
+
+[[package]]
+name = "zerocopy"
+version = "0.8.39"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db6d35d663eadb6c932438e763b262fe1a70987f9ae936e60158176d710cae4a"
+dependencies = [
+ "zerocopy-derive",
+]
+
+[[package]]
+name = "zerocopy-derive"
+version = "0.8.39"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4122cd3169e94605190e77839c9a40d40ed048d305bfdc146e7df40ab0f3e517"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

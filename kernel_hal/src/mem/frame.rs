@@ -135,14 +135,14 @@ impl Display for BitmapFrameAllocator {
 
 impl BitmapFrameAllocator {
     /// Note that after initialization, you need to deallocate all the usable frames manually.
-    pub fn new(bitmap_buffer: &'static mut [usize], usable_frames: usize) -> Self {
+    pub fn new(bitmap_buffer: &'static mut [usize]) -> Self {
         let origin_frames = core::mem::size_of_val(bitmap_buffer) * 8;
         let bitmap = Bitmap::new(bitmap_buffer);
 
         BitmapFrameAllocator {
             bitmap,
             origin_frames,
-            usable_frames,
+            usable_frames: 0,
         }
     }
 
@@ -160,10 +160,14 @@ impl BitmapFrameAllocator {
     }
 
     pub fn allocate_frames(&mut self, count: usize) -> Option<PhysAddr> {
-        let index = self
-            .bitmap
-            .find_range(count, true)
-            .expect("No more usable frames!");
+        let Some(index) = self.bitmap.find_range(count, true) else {
+            log::error!(
+                "No more usable frames! Usable: {}, required: {}",
+                self.usable_frames,
+                count
+            );
+            return None;
+        };
 
         self.bitmap.set_range(index, index + count, false);
         self.usable_frames -= count;

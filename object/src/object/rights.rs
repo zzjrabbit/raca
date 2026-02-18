@@ -15,5 +15,11 @@ bitflags! {
 
         const BASIC = Self::READ.bits() | Self::WRITE.bits() | Self::WAIT.bits();
         const ALL = u32::MAX;
+
+        const VMAR = Self::BASIC.bits()
+                        | Self::TRANSFER.bits()
+                        | Self::MANAGE.bits()
+                        | Self::MAP.bits()
+                        | Self::DUPLICATE.bits();
     }
 }

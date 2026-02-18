@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::{Errno, Result, mem::PAGE_SIZE};
+use crate::{Errno, Result, impl_kobj, mem::PAGE_SIZE, new_kobj, object::KObjectBase};
 use alloc::{sync::Arc, vec::Vec};
 use kernel_hal::{
     io::IoMem,
@@ -10,10 +10,13 @@ use spin::RwLock;
 
 mod rw;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Vmo {
-    inner: Arc<VmoInner>,
+    inner: VmoInner,
+    base: KObjectBase,
 }
+
+impl_kobj!(Vmo);
 
 type PhysicalMemoryRef = Arc<PhysicalMemory>;
 
@@ -29,25 +32,25 @@ enum VmoInner {
 }
 
 impl Vmo {
-    pub fn allocate_ram(count: usize) -> Result<Self> {
-        Ok(Self {
-            inner: Arc::new(VmoInner::Ram {
+    pub fn allocate_ram(count: usize) -> Result<Arc<Self>> {
+        Ok(new_kobj!({
+            inner: VmoInner::Ram {
                 frames: RwLock::new(alloc::vec![None; count]),
-            }),
-        })
+            },
+        }))
     }
 
-    pub fn acquire_iomem(address: VirtAddr, length: usize) -> Result<Self> {
-        Ok(Self {
-            inner: Arc::new(VmoInner::IoMem {
+    pub fn acquire_iomem(address: VirtAddr, length: usize) -> Result<Arc<Self>> {
+        Ok(new_kobj!({
+            inner: VmoInner::IoMem {
                 iomem: IoMem::acquire(address..address + length)?,
                 offset: address % PAGE_SIZE,
-            }),
-        })
+            },
+        }))
     }
 
-    pub fn deep_clone(&self) -> Result<Self> {
-        match self.inner.as_ref() {
+    pub fn deep_clone(&self) -> Result<Arc<Self>> {
+        match &self.inner {
             VmoInner::Ram { frames } => {
                 let mut new_frames = alloc::vec![None; frames.read().len()];
                 for (i, dest) in new_frames.iter_mut().enumerate() {
@@ -62,11 +65,11 @@ impl Vmo {
                         *dest = Some(frame.clone());
                     }
                 }
-                Ok(Self {
-                    inner: Arc::new(VmoInner::Ram {
+                Ok(new_kobj!({
+                    inner: VmoInner::Ram {
                         frames: RwLock::new(new_frames),
-                    }),
-                })
+                    },
+                }))
             }
             VmoInner::IoMem { .. } => {
                 Err(Errno::AccessDenied.with_message("Attempting to deep clone IoMem."))
@@ -77,7 +80,7 @@ impl Vmo {
 
 impl Vmo {
     pub(super) fn get_ram(&self, offset: usize) -> Result<Option<(usize, PhysicalMemoryRef)>> {
-        match self.inner.as_ref() {
+        match &self.inner {
             VmoInner::Ram { frames } => {
                 let id = offset / PAGE_SIZE;
                 let page_offset = offset % PAGE_SIZE;
@@ -97,14 +100,14 @@ impl Vmo {
     }
 
     pub(super) fn get_iomem(&self) -> Option<(Arc<IoMem>, usize)> {
-        match self.inner.as_ref() {
+        match &self.inner {
             VmoInner::Ram { .. } => None,
             VmoInner::IoMem { iomem, offset } => Some((iomem.clone(), *offset)),
         }
     }
 
     pub(super) fn commited(&self, id: usize) -> bool {
-        match self.inner.as_ref() {
+        match &self.inner {
             VmoInner::Ram { frames } => frames.read()[id].is_some(),
             VmoInner::IoMem { .. } => true,
         }
@@ -114,21 +117,21 @@ impl Vmo {
 impl Vmo {
     /// Returns the length of the VMO in bytes.
     pub fn len(&self) -> usize {
-        match self.inner.as_ref() {
+        match &self.inner {
             VmoInner::Ram { frames } => frames.read().len() * PAGE_SIZE,
             VmoInner::IoMem { iomem, .. } => iomem.size(),
         }
     }
 
     pub fn is_empty(&self) -> bool {
-        match self.inner.as_ref() {
+        match &self.inner {
             VmoInner::Ram { frames } => frames.read().is_empty(),
             VmoInner::IoMem { iomem, .. } => iomem.size() == 0,
         }
     }
 
     pub fn is_iomem(&self) -> bool {
-        match self.inner.as_ref() {
+        match &self.inner {
             VmoInner::Ram { .. } => false,
             VmoInner::IoMem { .. } => true,
         }
@@ -136,16 +139,16 @@ impl Vmo {
 }
 
 impl Vmo {
-    pub fn split(&self, id: usize) -> Result<Self> {
-        match self.inner.as_ref() {
+    pub fn split(&self, id: usize) -> Result<Arc<Self>> {
+        match &self.inner {
             VmoInner::Ram { frames } => {
                 let mut frames = frames.write();
                 let new_frames = frames.split_off(id);
-                Ok(Self {
-                    inner: Arc::new(VmoInner::Ram {
+                Ok(new_kobj!({
+                    inner: VmoInner::Ram {
                         frames: RwLock::new(new_frames),
-                    }),
-                })
+                    },
+                }))
             }
             VmoInner::IoMem { .. } => Err(Errno::InvArg.no_message()),
         }

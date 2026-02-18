@@ -10,4 +10,6 @@ kernel_hal = { path = "../kernel_hal" }
 limine = "0.5.0"
 log.workspace = true
 object = { path = "../object", default-features = false }
+pod.workspace = true
+protocol = { version = "0.2.0", path = "../user/protocol" }
 syscall = { path = "../syscall" }
