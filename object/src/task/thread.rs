@@ -2,15 +2,15 @@ use core::sync::atomic::{AtomicU64, Ordering};
 
 use alloc::sync::{Arc, Weak};
 use kernel_hal::{
-    mem::PageProperty,
-    task::{HwThread, ThreadState},
+    mem::{PageProperty, VirtAddr},
+    task::{HwThread, ReturnReason, ThreadState, UserContext},
 };
 
 use crate::{
     impl_kobj,
     mem::{Vmar, Vmo},
     object::KObjectBase,
-    task::Process,
+    task::{Process, exception::exception_handler},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -92,6 +92,38 @@ impl Thread {
 impl Thread {
     pub fn start(self: &Arc<Self>, update_fn: impl FnMut() + Send + 'static) {
         self.context().spawn(update_fn);
+    }
+
+    pub fn start_user(
+        self: &Arc<Self>,
+        process: Arc<Process>,
+        entry: VirtAddr,
+        stack: usize,
+        initializer: impl FnOnce(&mut UserContext),
+        syscall_handler: impl Fn(&Arc<Process>, &mut UserContext) + Send + 'static,
+    ) {
+        let mut user_ctx = UserContext::default();
+        user_ctx.set_ip(entry);
+        user_ctx.set_sp(stack);
+
+        initializer(&mut user_ctx);
+
+        self.start(move || {
+            process.root_vmar().activate();
+            let reason = user_ctx.enter_user_space();
+            match reason {
+                ReturnReason::KernelEvent => {}
+                ReturnReason::Syscall => {
+                    syscall_handler(&process, &mut user_ctx);
+                }
+                ReturnReason::Exception(info) => {
+                    if exception_handler(&info).is_err() {
+                        log::error!("Unhandled exception, info: {:#x?}", info);
+                        kernel_hal::platform::idle_loop();
+                    }
+                }
+            }
+        });
     }
 
     pub fn exit(self: &Arc<Self>) {

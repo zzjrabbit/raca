@@ -21,5 +21,12 @@ bitflags! {
                         | Self::MANAGE.bits()
                         | Self::MAP.bits()
                         | Self::DUPLICATE.bits();
+        const PROCESS = Self::BASIC.bits()
+                        | Self::TRANSFER.bits()
+                        | Self::MANAGE.bits()
+                        | Self::DUPLICATE.bits();
+        const THREAD = Self::BASIC.bits()
+                        | Self::MANAGE.bits()
+                        | Self::DUPLICATE.bits();
     }
 }

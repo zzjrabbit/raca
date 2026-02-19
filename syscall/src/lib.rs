@@ -13,7 +13,10 @@ use crate::{
     debug::debug,
     handle::remove_handle,
     ipc::{new_channel, read_channel, write_channel},
-    task::exit,
+    task::{
+        exit, exit_thread, kill_process, kill_thread, new_process, new_thread, start_process,
+        start_thread,
+    },
     vm::{allocate_vmar, allocate_vmar_at, allocate_vmo, map_vmar, protect_vmar, unmap_vmar},
 };
 
@@ -72,6 +75,13 @@ fn syscall_impl(process: &Arc<Process>, user_ctx: &mut UserContext) -> Result<us
         9 => protect_vmar(process, arg1 as u32, arg2, arg3, arg4 as u32),
         10 => allocate_vmo(process, arg1, arg2),
         11 => exit(process, arg1 as i32),
+        12 => new_process(process, arg1, arg2, arg3, arg4),
+        13 => start_process(process, arg1 as u32, arg2 as u32, arg3, arg4, arg5),
+        14 => new_thread(process, arg1 as u32, arg2),
+        15 => start_thread(process, arg1 as u32, arg2, arg3, arg4),
+        16 => exit_thread(),
+        17 => kill_process(process, arg1 as u32),
+        18 => kill_thread(process, arg1 as u32),
         _ => Err(Errno::InvSyscall.no_message()),
     }
 }

@@ -131,10 +131,13 @@ pub extern "C" fn kmain() -> ! {
     log::debug!("pushing handles");
 
     let (kernel_endpoint, user_endpoint) = Channel::new();
+    let process_handle = process.add_handle(Handle::new(process.clone(), Rights::PROCESS));
     let channel = process.add_handle(Handle::new(user_endpoint, Rights::READ));
     let vmar_handle = process.add_handle(Handle::new(vmar.clone(), Rights::VMAR));
 
     let proc_info = ProcessStartInfo {
+        process: process_handle.as_raw(),
+        _reserved: 0,
         channel: channel.as_raw(),
         vmar: vmar_handle.as_raw(),
         vmar_base: vmar.base(),

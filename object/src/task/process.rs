@@ -1,8 +1,5 @@
 use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
-use kernel_hal::{
-    mem::VirtAddr,
-    task::{ReturnReason, UserContext},
-};
+use kernel_hal::{mem::VirtAddr, task::UserContext};
 use pod::derive;
 use spin::lock_api::Mutex;
 
@@ -11,7 +8,7 @@ use crate::{
     mem::Vmar,
     new_kobj,
     object::{Handle, KObjectBase, KernelObject, Rights},
-    task::{Thread, exception::exception_handler},
+    task::Thread,
 };
 
 pub struct Process {
@@ -90,29 +87,7 @@ impl Process {
         initializer: impl FnOnce(&mut UserContext),
         syscall_handler: impl Fn(&Arc<Self>, &mut UserContext) + Send + 'static,
     ) {
-        let mut user_ctx = UserContext::default();
-        user_ctx.set_ip(entry);
-        user_ctx.set_sp(stack);
-
-        initializer(&mut user_ctx);
-
-        let process = self.clone();
-        thread.start(move || {
-            process.root_vmar().activate();
-            let reason = user_ctx.enter_user_space();
-            match reason {
-                ReturnReason::KernelEvent => {}
-                ReturnReason::Syscall => {
-                    syscall_handler(&process, &mut user_ctx);
-                }
-                ReturnReason::Exception(info) => {
-                    if exception_handler(&info).is_err() {
-                        log::error!("Unhandled exception, info: {:#x?}", info);
-                        kernel_hal::platform::idle_loop();
-                    }
-                }
-            }
-        });
+        thread.start_user(self.clone(), entry, stack, initializer, syscall_handler);
     }
 
     pub fn exit(&self, status: i32) {

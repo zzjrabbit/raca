@@ -9,6 +9,7 @@ pub mod ipc;
 pub mod os;
 pub mod process;
 pub mod syscall;
+pub mod thread;
 pub mod vm;
 
 pub fn debug(msg: &str) -> Result<()> {

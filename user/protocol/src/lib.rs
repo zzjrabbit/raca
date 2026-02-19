@@ -5,6 +5,8 @@ use pod::derive;
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Pod)]
 pub struct ProcessStartInfo {
+    pub process: u32,
+    pub _reserved: u32,
     pub channel: u32,
     pub vmar: u32,
     pub vmar_base: usize,
