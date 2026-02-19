@@ -1,15 +1,17 @@
 [workspace]
 members = [
     "builder", 
-    "loongarch64", 
+    "crates/loongarch64", 
     "kernel", 
     "object", 
     "kernel_hal", 
-    "errors", 
+    "crates/errors", 
     "user/ustd", 
     "syscall",
     "user/protocol", 
-    "user/user_boot", "crates/pod", "crates/pod-macros",
+    "user/user_boot", 
+    "crates/pod", 
+    "crates/pod-macros",
 ]
 default-members = ["builder"]
 resolver = "3"
@@ -30,7 +32,7 @@ lto = "thin"
 log = "0.4.28"
 spin = "0.10.0"
 tokio = { version = "1.49.0", features = ["macros", "rt", "rt-multi-thread"] }
-errors = { path = "./errors" }
+errors = { path = "./crates/errors" }
 ustd = { path = "./user/ustd" }
 zerocopy = { version = "0.8.39", features = ["derive"] }
 pod = { path = "./crates/pod" }

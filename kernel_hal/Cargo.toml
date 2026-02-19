@@ -20,7 +20,7 @@ pod.workspace = true
 
 
 [target.'cfg(target_arch = "loongarch64")'.dependencies]
-loongarch64 = { path = "../loongarch64" }
+loongarch64 = { path = "../crates/loongarch64" }
 
 [dependencies.nix]
 version = "0.31.1"
