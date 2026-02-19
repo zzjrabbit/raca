@@ -11,14 +11,16 @@ use kernel_hal::{
     mem::{CachePolicy, MMUFlags, PageProperty, Privilege},
     task::launch_multitask,
 };
-use limine::BaseRevision;
+use limine::{BaseRevision, request::StackSizeRequest};
 use object::{
     ipc::{Channel, MessagePacket},
     mem::{PAGE_SIZE, Vmo, align_up_by_page_size},
     object::{Handle, Rights},
     task::Process,
 };
-use protocol::ProcessStartInfo;
+use protocol::{
+    FIRST_HANDLE, PROC_HANDLE_IDX, PROC_START_HANDLE_CNT, ProcessStartInfo, VMAR_HANDLE_IDX,
+};
 use syscall::syscall_handler;
 
 use crate::stack::{new_user_stack, push_stack};
@@ -30,6 +32,10 @@ mod stack;
 #[used]
 #[unsafe(link_section = ".requests")]
 static BASE_REVISION: BaseRevision = BaseRevision::with_revision(4);
+
+#[used]
+#[unsafe(link_section = ".requests")]
+static STACK_SIZE_REQUEST: StackSizeRequest = StackSizeRequest::new().with_size(128 * 1024);
 
 static USER_BOOT: &[u8] = include_bytes!(env!("USER_BOOT_PATH"));
 
@@ -131,15 +137,13 @@ pub extern "C" fn kmain() -> ! {
     log::debug!("pushing handles");
 
     let (kernel_endpoint, user_endpoint) = Channel::new();
-    let process_handle = process.add_handle(Handle::new(process.clone(), Rights::PROCESS));
     let channel = process.add_handle(Handle::new(user_endpoint, Rights::READ));
-    let vmar_handle = process.add_handle(Handle::new(vmar.clone(), Rights::VMAR));
+    assert_eq!(channel.as_raw(), FIRST_HANDLE);
+
+    let process_handle = Handle::new(process.clone(), Rights::PROCESS);
+    let vmar_handle = Handle::new(vmar.clone(), Rights::VMAR);
 
     let proc_info = ProcessStartInfo {
-        process: process_handle.as_raw(),
-        _reserved: 0,
-        channel: channel.as_raw(),
-        vmar: vmar_handle.as_raw(),
         vmar_base: vmar.base(),
         vmar_size: vmar.size(),
     };
@@ -158,6 +162,17 @@ pub extern "C" fn kmain() -> ! {
         syscall_handler,
     );
 
+    let mut handles =
+        alloc::vec![Handle::new(process.clone(), Rights::empty()); PROC_START_HANDLE_CNT];
+    handles[PROC_HANDLE_IDX] = process_handle;
+    handles[VMAR_HANDLE_IDX] = vmar_handle;
+
+    kernel_endpoint
+        .write(MessagePacket {
+            data: Vec::new(),
+            handles,
+        })
+        .unwrap();
     kernel_endpoint
         .write(MessagePacket {
             data: Vec::from(b"Hello, World"),

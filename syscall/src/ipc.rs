@@ -40,12 +40,16 @@ pub fn read_channel(
     let actual_data_len = msg.data.len();
     let actual_handle_len = msg.handles.len();
 
-    process
-        .root_vmar()
-        .write_val(data_buffer.actual_len_addr, &actual_data_len)?;
-    process
-        .root_vmar()
-        .write_val(handle_buffer.actual_len_addr, &actual_handle_len)?;
+    if data_buffer.actual_len_addr != 0 {
+        process
+            .root_vmar()
+            .write_val(data_buffer.actual_len_addr, &actual_data_len)?;
+    }
+    if handle_buffer.actual_len_addr != 0 {
+        process
+            .root_vmar()
+            .write_val(handle_buffer.actual_len_addr, &actual_handle_len)?;
+    }
 
     if actual_data_len > data_buffer.len || actual_handle_len > handle_buffer.len {
         return Err(Errno::TooBig.no_message());

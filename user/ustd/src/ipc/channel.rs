@@ -12,7 +12,7 @@ use crate::{
     syscall::{sys_new_channel, sys_read_channel, sys_write_channel},
 };
 
-pub struct Channel(OwnedHandle);
+pub struct Channel(pub(crate) OwnedHandle);
 
 #[derive(Default)]
 pub struct MessagePacket {

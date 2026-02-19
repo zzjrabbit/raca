@@ -1,6 +1,3 @@
-/* Tell the linker that we want a loongarch64 ELF64 output file */
-OUTPUT_FORMAT(elf64-loongarch)
-
 /* We want the symbol kmain to be our entry point */
 ENTRY(kmain)
 

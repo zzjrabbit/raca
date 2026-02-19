@@ -23,6 +23,7 @@ gen_syscall! {
     fn sys_debug (0usize) (ptr: *const u8, len: usize);
 
     fn sys_remove_handle (1usize) (handle: u32);
+    fn sys_duplicate_handle (19usize) (handle: u32, new_handle: *mut u32);
 
     fn sys_new_channel (2usize) (handle0_ptr: *mut u32, handle1_ptr: *mut u32);
     fn sys_read_channel (3usize) (
@@ -74,6 +75,7 @@ gen_syscall! {
     fn sys_start_process (13usize) (
         handle: u32,
         thread: u32,
+        boot_handle: u32,
         entry: usize,
         stack: usize,
         start_info: *const ProcessStartInfo

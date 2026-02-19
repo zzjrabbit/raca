@@ -10,7 +10,4 @@ tempfile = "3.21.0"
 gpt = "4.1.0"
 fatfs = "0.3.6"
 walkdir = "2.5.0"
-zstd = "0.13.3"
-elf = "0.8.0"
-tar = "0.4.44"
 clap = { version = "4.5.58", features = ["derive"] }

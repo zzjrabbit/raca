@@ -1,4 +1,4 @@
-use crate::syscall::sys_remove_handle;
+use crate::syscall::{sys_duplicate_handle, sys_remove_handle};
 
 pub type RawHandle = u32;
 
@@ -29,6 +29,16 @@ impl Drop for OwnedHandle {
     }
 }
 
+impl Clone for OwnedHandle {
+    fn clone(&self) -> Self {
+        unsafe {
+            let mut new_handle = 0;
+            sys_duplicate_handle(self.as_raw(), &mut new_handle).unwrap();
+            Self(new_handle)
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct BorrowedHandle(RawHandle);
 
@@ -39,5 +49,15 @@ impl BorrowedHandle {
 
     pub const unsafe fn as_raw(&self) -> RawHandle {
         self.0
+    }
+}
+
+impl BorrowedHandle {
+    pub fn duplicate(&self) -> OwnedHandle {
+        unsafe {
+            let mut new_handle = 0;
+            sys_duplicate_handle(self.as_raw(), &mut new_handle).unwrap();
+            OwnedHandle(new_handle)
+        }
     }
 }

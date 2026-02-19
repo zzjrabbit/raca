@@ -11,7 +11,7 @@ use object::task::Process;
 
 use crate::{
     debug::debug,
-    handle::remove_handle,
+    handle::{duplicate_handle, remove_handle},
     ipc::{new_channel, read_channel, write_channel},
     task::{
         exit, exit_thread, kill_process, kill_thread, new_process, new_thread, start_process,
@@ -82,6 +82,7 @@ fn syscall_impl(process: &Arc<Process>, user_ctx: &mut UserContext) -> Result<us
         16 => exit_thread(),
         17 => kill_process(process, arg1 as u32),
         18 => kill_thread(process, arg1 as u32),
+        19 => duplicate_handle(process, arg1 as u32, arg2),
         _ => Err(Errno::InvSyscall.no_message()),
     }
 }

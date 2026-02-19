@@ -27,21 +27,19 @@ fn user_target(arch: &str) -> &str {
     }
 }
 
-fn build_user_boot(target_dir: &Path, arch: &str, release: bool) -> Result<PathBuf> {
+fn build_user_boot(target_dir: &Path, arch: &str) -> Result<PathBuf> {
     let user_target = user_target(arch);
 
     let mut user_boot = CargoOpts::new("user_boot".into());
     user_boot.build_std();
     user_boot.target(user_target.into());
 
-    if release {
-        user_boot.release();
-    }
+    user_boot.release();
 
     user_boot.done();
 
     Ok(target_dir
         .join(user_target)
-        .join(if release { "release" } else { "debug" })
+        .join("release")
         .join("user_boot"))
 }

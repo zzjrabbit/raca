@@ -1,7 +1,7 @@
 use errors::Result;
 
 use crate::{
-    os::raca::OwnedHandle,
+    os::raca::{BorrowedHandle, OwnedHandle},
     syscall::{
         sys_allocate_vmar, sys_allocate_vmar_at, sys_map_vmar, sys_protect_vmar, sys_unmap_vmar,
     },
@@ -17,6 +17,10 @@ pub struct Vmar {
 impl Vmar {
     pub unsafe fn from_handle_base_size(handle: OwnedHandle, base: usize, size: usize) -> Self {
         Self { handle, base, size }
+    }
+
+    pub(crate) fn handle(&self) -> BorrowedHandle {
+        self.handle.borrow()
     }
 }
 

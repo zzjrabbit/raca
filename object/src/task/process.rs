@@ -152,6 +152,15 @@ impl Process {
         }
     }
 
+    pub fn get_handle(&self, id: HandleId) -> Result<Handle> {
+        let inner = self.inner.lock();
+        let handle = inner
+            .handles
+            .get(&id)
+            .ok_or(Errno::BadHandle.with_message("Handle not found!"))?;
+        Ok(handle.clone())
+    }
+
     pub fn add_thread(&self, thread: Arc<Thread>) {
         let mut inner = self.inner.lock();
         inner.threads.push(thread);

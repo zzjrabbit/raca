@@ -14,7 +14,7 @@ pub fn do_build(args: BuildArgs) -> Result<(PathBuf, PathBuf)> {
 
     let BuildArgs { release, arch } = args;
 
-    let user_boot_path = build_user_boot(&target_dir, &arch, release)?;
+    let user_boot_path = build_user_boot(&target_dir, &arch)?;
 
     let kernel_target = format!("{}-unknown-none", arch);
     let mut kernel = CargoOpts::new("kernel".into());

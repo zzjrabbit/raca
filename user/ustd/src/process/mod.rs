@@ -1,8 +1,11 @@
+use alloc::vec::Vec;
 use errors::Result;
+use protocol::{PROC_HANDLE_IDX, PROC_START_HANDLE_CNT, ProcessStartInfo, VMAR_HANDLE_IDX};
 
 use crate::{
-    os::raca::OwnedHandle,
-    syscall::{sys_exit, sys_kill_process, sys_new_process, sys_new_thread},
+    ipc::{Channel, MessagePacket},
+    os::raca::{BorrowedHandle, OwnedHandle},
+    syscall::{sys_exit, sys_kill_process, sys_new_process, sys_new_thread, sys_start_process},
     thread::Thread,
     vm::Vmar,
 };
@@ -37,6 +40,10 @@ impl Process {
     pub fn vmar(&self) -> &Vmar {
         &self.root_vmar
     }
+
+    pub(crate) fn handle(&self) -> BorrowedHandle {
+        self.handle.borrow()
+    }
 }
 
 impl Process {
@@ -47,6 +54,36 @@ impl Process {
         }
         let handle = unsafe { OwnedHandle::from_raw(raw_handle) };
         Ok(unsafe { Thread::from_handle(handle) })
+    }
+}
+
+impl Process {
+    pub fn start(&self, thread: &Thread, _binary: &[u8]) -> Result<()> {
+        let (channel0, channel1) = Channel::new()?;
+
+        let mut handles = alloc::vec![unsafe {OwnedHandle::from_raw(0)}; PROC_START_HANDLE_CNT];
+        handles[PROC_HANDLE_IDX] = self.handle().duplicate();
+        handles[VMAR_HANDLE_IDX] = self.vmar().handle().duplicate();
+        channel1.write(MessagePacket {
+            data: Vec::new(),
+            handles,
+        })?;
+
+        unsafe {
+            sys_start_process(
+                self.handle.as_raw(),
+                thread.handle().as_raw(),
+                channel0.0.as_raw(),
+                0,
+                0,
+                &ProcessStartInfo {
+                    vmar_base: self.vmar().base(),
+                    vmar_size: self.vmar().size(),
+                },
+            )?;
+        }
+
+        Ok(())
     }
 }
 

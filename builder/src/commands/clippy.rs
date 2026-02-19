@@ -7,7 +7,7 @@ use crate::{
 
 pub fn do_clippy() -> Result<()> {
     let target_dir = target_dir();
-    let user_boot_path = build_user_boot(&target_dir, "loongarch64", false)?;
+    let user_boot_path = build_user_boot(&target_dir, "loongarch64")?;
 
     let run_clippy = |kcrate: CargoOpts| {
         let mut crate1 = kcrate.clone();
