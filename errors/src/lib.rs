@@ -57,7 +57,7 @@ impl TryFrom<i32> for Error {
             Err(())
         } else {
             Ok(Self {
-                errno: unsafe { core::mem::transmute(errno) },
+                errno: unsafe { core::mem::transmute::<i32, Errno>(errno) },
                 message: String::new(),
             })
         }
