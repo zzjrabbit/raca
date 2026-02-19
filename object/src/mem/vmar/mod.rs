@@ -44,7 +44,7 @@ impl Vmar {
 
     #[cfg(feature = "libos")]
     pub fn new_root() -> Arc<Self> {
-        static ROOT: Lazy<Arc<Vmar>> = Lazy::new(|| Vmar::new_root_impl());
+        static ROOT: Lazy<Arc<Vmar>> = Lazy::new(Vmar::new_root_impl);
         ROOT.clone()
     }
 

@@ -9,6 +9,7 @@ define_csr!(ExceptionReturnAddress, 0x6);
 define_csr!(BadVirtAddr, 0x7);
 
 define_csr!(TimerConfig, 0x41);
+define_csr!(TimerValue, 0x42);
 define_csr!(TimerIntClear, 0x44);
 
 #[derive(Clone, Copy)]

@@ -1,4 +1,4 @@
-use loongarch64::registers::{BadVirtAddr, ExceptionStatus};
+use loongarch64::registers::{BadVirtAddr, ExceptionStatus, TimerValue};
 
 use crate::{
     arch::trap::{CpuExceptionInfo, TrapFrame, handle_timer, run_user},
@@ -75,8 +75,10 @@ impl UserContext {
             let ecode = ExceptionStatus.read_ecode();
             match ecode {
                 0 => {
-                    handle_timer(&self.as_trap_frame());
-                    break ReturnReason::KernelEvent;
+                    if TimerValue.read() == 0{
+                        handle_timer(&self.as_trap_frame());
+                        break ReturnReason::KernelEvent;
+                    }
                 }
                 0xb => {
                     self.era += 4;
