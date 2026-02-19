@@ -1,7 +1,7 @@
-use loongarch64::registers::{BadVirtAddr, ExceptionStatus, TimerIntClear};
+use loongarch64::registers::{BadVirtAddr, ExceptionStatus};
 
 use crate::{
-    arch::trap::{CpuExceptionInfo, run_user},
+    arch::trap::{CpuExceptionInfo, TrapFrame, handle_timer, run_user},
     mem::VirtAddr,
     task::ReturnReason,
 };
@@ -68,25 +68,27 @@ pub struct GeneralRegs {
 
 impl UserContext {
     pub fn enter_user_space(&mut self) -> ReturnReason {
-        unsafe {
-            run_user(self);
-        }
-        let ecode = ExceptionStatus.read_ecode();
-        match ecode {
-            0 => {
-                TimerIntClear.write(1);
-                ReturnReason::Int(0)
+        loop {
+            unsafe {
+                run_user(self);
             }
-            0xb => {
-                self.era += 4;
-                ReturnReason::Syscall
-            }
-            _ => {
-                let badv = BadVirtAddr.read() as VirtAddr;
-                ReturnReason::Exception(CpuExceptionInfo {
-                    code: ecode as usize,
-                    badv,
-                })
+            let ecode = ExceptionStatus.read_ecode();
+            match ecode {
+                0 => {
+                    handle_timer(&self.as_trap_frame());
+                    break ReturnReason::KernelEvent;
+                }
+                0xb => {
+                    self.era += 4;
+                    break ReturnReason::Syscall;
+                }
+                _ => {
+                    let badv = BadVirtAddr.read() as VirtAddr;
+                    break ReturnReason::Exception(CpuExceptionInfo {
+                        code: ecode as usize,
+                        badv,
+                    });
+                }
             }
         }
     }
@@ -150,5 +152,14 @@ impl UserContext {
 
     pub fn set_second_arg(&mut self, arg: usize) {
         self.general.a1 = arg;
+    }
+
+    fn as_trap_frame(&self) -> TrapFrame {
+        TrapFrame {
+            general: self.general,
+            prmd: self.prmd,
+            era: self.era,
+            euen: self.euen,
+        }
     }
 }

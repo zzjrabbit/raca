@@ -94,7 +94,7 @@ impl Process {
             process.root_vmar().activate();
             let reason = user_ctx.enter_user_space();
             match reason {
-                ReturnReason::Int(_) => {}
+                ReturnReason::KernelEvent => {}
                 ReturnReason::Syscall => {
                     syscall_handler(&process, &mut user_ctx);
                 }

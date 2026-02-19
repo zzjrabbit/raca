@@ -27,6 +27,11 @@ pub struct TrapFrame {
     pub euen: usize,
 }
 
+pub(super) fn handle_timer(trap_frame: &TrapFrame) {
+    TimerIntClear.write(1);
+    call_timer_callback_functions(trap_frame);
+}
+
 extern "C" fn trap_handler(f: &mut TrapFrame) {
     let estat = ExceptionStatus.read();
     let ecode = estat.get_bits(16..=21);
@@ -34,8 +39,7 @@ extern "C" fn trap_handler(f: &mut TrapFrame) {
 
     if ecode == 0 {
         if estat.get_bit(11) {
-            call_timer_callback_functions(f);
-            TimerIntClear.write(1);
+            handle_timer(f);
         } else {
             log::warn!("Unknown interrupt!");
         }
