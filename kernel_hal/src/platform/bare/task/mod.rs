@@ -89,6 +89,10 @@ impl HwThread {
     pub fn current_thread() -> Weak<dyn Any + Send + Sync> {
         SCHEDULER.lock().current().unwrap().thread.clone()
     }
+
+    pub fn exit(&self) {
+        schedule();
+    }
 }
 
 pub fn launch_multitask() {

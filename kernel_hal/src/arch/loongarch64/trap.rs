@@ -4,7 +4,7 @@ use bit_field::BitField;
 use loongarch64::{
     VirtAddr,
     instructions::{interrupt, tlb},
-    registers::{BadVirtAddr, ExceptionEntry, ExceptionStatus, TimerConfigBuilder, TimerIntClear},
+    registers::{BadVirtAddr, ExceptionEntry, ExceptionStatus, TimerIntClear},
 };
 
 use crate::{
@@ -72,11 +72,6 @@ extern "C" fn trap_handler(f: &mut TrapFrame) {
 }
 
 pub fn init() {
-    TimerConfigBuilder::new()
-        .initial_value(1000000 >> 2)
-        .set_enabled(true)
-        .set_periodic(true)
-        .done();
     ExceptionEntry.write(trap_entry as *const () as u64);
 }
 

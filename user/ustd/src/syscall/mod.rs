@@ -31,4 +31,5 @@ gen_syscall! {
     fn sys_unmap_vmar (8usize) (handle: u32, addr: usize, size: usize);
     fn sys_protect_vmar (9usize) (handle: u32, addr: usize, size: usize, flags: u32);
     fn sys_allocate_vmo (10usize) (count: usize, handle: *mut u32);
+    fn sys_exit (11usize) (exit_code: i32);
 }

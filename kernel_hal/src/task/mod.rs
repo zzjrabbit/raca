@@ -12,6 +12,7 @@ pub enum ThreadState {
     #[default]
     Ready,
     Blocked,
+    Dead,
 }
 
 impl ThreadState {
@@ -25,5 +26,9 @@ impl ThreadState {
 
     pub fn ready(&self) -> bool {
         matches!(self, Self::Ready)
+    }
+
+    pub fn dead(&self) -> bool {
+        matches!(self, Self::Dead)
     }
 }

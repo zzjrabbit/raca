@@ -93,6 +93,21 @@ impl Thread {
     pub fn start(self: &Arc<Self>, update_fn: impl FnMut() + Send + 'static) {
         self.context().spawn(update_fn);
     }
+
+    pub fn exit(self: &Arc<Self>) {
+        self.set_state(ThreadState::Dead);
+        if let Some(process) = self.process() {
+            process.remove_thread(self);
+        }
+        self.context().exit();
+    }
+
+    pub fn kill(self: &Arc<Self>) {
+        self.set_state(ThreadState::Dead);
+        if let Some(process) = self.process() {
+            process.remove_thread(self);
+        }
+    }
 }
 
 #[cfg(test)]

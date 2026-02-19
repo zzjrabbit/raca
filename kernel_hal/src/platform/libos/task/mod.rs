@@ -49,6 +49,8 @@ impl HwThread {
     pub fn current_thread() -> Weak<dyn Any + Send + Sync> {
         Weak::<()>::new()
     }
+
+    pub fn exit(&self) {}
 }
 
 struct ThreadFuture {

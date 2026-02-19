@@ -20,9 +20,7 @@ extern "C" fn _start(info: *const ProcessStartInfo) -> ! {
 
     let channel = unsafe { Channel::from_handle(OwnedHandle::from_raw(channel)) };
 
-    unsafe {
-        main(&channel);
-    }
+    let exit_code = unsafe { main(&channel) };
 
-    loop {}
+    crate::process::exit(exit_code);
 }

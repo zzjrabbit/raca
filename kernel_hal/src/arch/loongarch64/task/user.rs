@@ -1,4 +1,4 @@
-use loongarch64::registers::{BadVirtAddr, ExceptionStatus, TimerValue};
+use loongarch64::registers::{BadVirtAddr, ExceptionStatus, TimerConfigBuilder, TimerValue};
 
 use crate::{
     arch::trap::{CpuExceptionInfo, TrapFrame, handle_timer, run_user},
@@ -69,13 +69,18 @@ pub struct GeneralRegs {
 impl UserContext {
     pub fn enter_user_space(&mut self) -> ReturnReason {
         loop {
+            TimerConfigBuilder::new()
+                .initial_value(10000000 >> 2)
+                .set_enabled(true)
+                .set_periodic(false)
+                .done();
             unsafe {
                 run_user(self);
             }
             let ecode = ExceptionStatus.read_ecode();
             match ecode {
                 0 => {
-                    if TimerValue.read() == 0{
+                    if TimerValue.read() == 0 {
                         handle_timer(&self.as_trap_frame());
                         break ReturnReason::KernelEvent;
                     }

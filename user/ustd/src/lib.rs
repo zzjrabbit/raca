@@ -7,6 +7,7 @@ extern crate alloc;
 
 pub mod ipc;
 pub mod os;
+pub mod process;
 pub mod syscall;
 pub mod vm;
 

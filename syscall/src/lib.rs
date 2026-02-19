@@ -13,12 +13,14 @@ use crate::{
     debug::debug,
     handle::remove_handle,
     ipc::{new_channel, read_channel, write_channel},
+    task::exit,
     vm::{allocate_vmar, allocate_vmar_at, allocate_vmo, map_vmar, protect_vmar, unmap_vmar},
 };
 
 mod debug;
 mod handle;
 mod ipc;
+mod task;
 mod vm;
 
 type SyscallResult = Result<usize>;
@@ -69,6 +71,7 @@ fn syscall_impl(process: &Arc<Process>, user_ctx: &mut UserContext) -> Result<us
         8 => unmap_vmar(process, arg1 as u32, arg2, arg3),
         9 => protect_vmar(process, arg1 as u32, arg2, arg3, arg4 as u32),
         10 => allocate_vmo(process, arg1, arg2),
+        11 => exit(process, arg1 as i32),
         _ => Err(Errno::InvSyscall.no_message()),
     }
 }

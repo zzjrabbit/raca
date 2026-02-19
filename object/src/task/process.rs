@@ -23,6 +23,7 @@ pub struct Process {
 struct ProcessInner {
     threads: Vec<Arc<Thread>>,
     handles: BTreeMap<HandleId, Handle>,
+    exit_status: Option<i32>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Pod)]
@@ -48,6 +49,7 @@ impl Process {
             inner: Mutex::new(ProcessInner {
                 threads: Vec::new(),
                 handles: BTreeMap::new(),
+                exit_status: None,
             }),
             vmar,
         })
@@ -57,6 +59,11 @@ impl Process {
 impl Process {
     pub fn root_vmar(&self) -> &Arc<Vmar> {
         &self.vmar
+    }
+
+    pub fn exit_status(&self) -> Option<i32> {
+        let inner = self.inner.lock();
+        inner.exit_status
     }
 }
 
@@ -107,6 +114,30 @@ impl Process {
             }
         });
     }
+
+    pub fn exit(&self, status: i32) {
+        let current_thread = Thread::current().unwrap();
+        {
+            for thread in self.inner.lock().threads.clone() {
+                if thread.id() != current_thread.id() {
+                    thread.kill();
+                }
+            }
+            let mut inner = self.inner.lock();
+            inner.exit_status = Some(status);
+        }
+        current_thread.exit();
+    }
+
+    pub fn kill(&self) {
+        {
+            let mut inner = self.inner.lock();
+            inner.exit_status = Some(-1);
+        }
+        for thread in self.inner.lock().threads.clone() {
+            thread.kill();
+        }
+    }
 }
 
 impl Process {
@@ -151,9 +182,12 @@ impl Process {
         inner.threads.push(thread);
     }
 
-    pub fn remove_thread(&self, thread: Arc<Thread>) {
+    pub fn remove_thread(&self, thread: &Arc<Thread>) {
         let mut inner = self.inner.lock();
         inner.threads.retain(|t| t.id() != thread.id());
+        if inner.threads.is_empty() {
+            inner.exit_status = Some(0);
+        }
     }
 }
 
