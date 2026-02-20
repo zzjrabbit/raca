@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use crate::{
     cargo::CargoOpts,
-    commands::{build_user_boot, target_dir},
+    commands::{build_user_boot, target, target_dir},
 };
 
 pub fn do_clippy() -> Result<()> {
@@ -11,7 +11,7 @@ pub fn do_clippy() -> Result<()> {
 
     let run_clippy = |kcrate: CargoOpts| {
         let mut crate1 = kcrate.clone();
-        crate1.target("loongarch64-unknown-none".into());
+        crate1.target(target("loongarch64").into());
         crate1.done();
 
         let mut crate2 = kcrate.clone();
@@ -29,7 +29,7 @@ pub fn do_clippy() -> Result<()> {
 
     let mut kernel = CargoOpts::new("kernel".into());
     kernel.action("clippy");
-    kernel.target("loongarch64-unknown-none-softfloat".into());
+    kernel.target(target("loongarch64").into());
     kernel.env("USER_BOOT_PATH", user_boot_path.to_str().unwrap());
     kernel.done();
 

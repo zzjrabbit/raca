@@ -19,16 +19,20 @@ fn target_dir() -> PathBuf {
         .join("target")
 }
 
-fn user_target(arch: &str) -> String {
-    format!("{}-unknown-none", arch)
+fn target(arch: &str) -> &str {
+    match arch {
+        "loongarch64" => "loongarch64-unknown-none-softfloat",
+        "x86_64" => "x86_64-unknown-none",
+        _ => panic!("Unsupported architecture: {}", arch),
+    }
 }
 
 fn build_user_boot(target_dir: &Path, arch: &str, release: bool) -> Result<PathBuf> {
-    let user_target = user_target(arch);
+    let user_target = target(arch);
 
     let mut user_boot = CargoOpts::new("user_boot".into());
     user_boot.env("RUSTFLAGS", "-C relocation-model=pie");
-    user_boot.target(user_target.clone());
+    user_boot.target(user_target.into());
 
     if release {
         user_boot.release();

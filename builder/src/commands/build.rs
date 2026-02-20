@@ -5,7 +5,7 @@ use anyhow::Result;
 use crate::{
     BuildArgs,
     cargo::CargoOpts,
-    commands::{build_user_boot, target_dir},
+    commands::{build_user_boot, target, target_dir},
     image,
 };
 
@@ -16,7 +16,7 @@ pub fn do_build(args: BuildArgs) -> Result<(PathBuf, PathBuf)> {
 
     let user_boot_path = build_user_boot(&target_dir, &arch, release)?;
 
-    let kernel_target = format!("{}-unknown-none", arch);
+    let kernel_target = target(&arch).to_string();
     let mut kernel = CargoOpts::new("kernel".into());
     kernel.target(kernel_target.clone());
     if release {
