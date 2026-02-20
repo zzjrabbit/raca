@@ -19,27 +19,25 @@ fn target_dir() -> PathBuf {
         .join("target")
 }
 
-fn user_target(arch: &str) -> &str {
-    match arch {
-        "x86_64" => "x86_64-unknown-linux-none",
-        "loongarch64" => "loongarch64-unknown-linux-musl",
-        _ => unimplemented!(),
-    }
+fn user_target(arch: &str) -> String {
+    format!("{}-unknown-none", arch)
 }
 
-fn build_user_boot(target_dir: &Path, arch: &str) -> Result<PathBuf> {
+fn build_user_boot(target_dir: &Path, arch: &str, release: bool) -> Result<PathBuf> {
     let user_target = user_target(arch);
 
     let mut user_boot = CargoOpts::new("user_boot".into());
-    user_boot.build_std();
-    user_boot.target(user_target.into());
+    user_boot.env("RUSTFLAGS", "-C relocation-model=pie");
+    user_boot.target(user_target.clone());
 
-    user_boot.release();
+    if release {
+        user_boot.release();
+    }
 
     user_boot.done();
 
     Ok(target_dir
         .join(user_target)
-        .join("release")
+        .join(if release { "release" } else { "debug" })
         .join("user_boot"))
 }

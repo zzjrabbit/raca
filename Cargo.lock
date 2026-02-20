@@ -1112,7 +1112,9 @@ name = "ustd"
 version = "0.2.0"
 dependencies = [
  "bitflags 2.11.0",
+ "elf",
  "errors",
+ "pod",
  "protocol",
  "spin",
  "talc",

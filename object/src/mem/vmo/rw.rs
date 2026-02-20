@@ -66,4 +66,9 @@ impl Vmo {
         self.write_bytes(offset, value.as_bytes())?;
         Ok(())
     }
+
+    pub fn zero(&self) -> Result<()> {
+        self.write_bytes(0, &alloc::vec![0; self.len()])?;
+        Ok(())
+    }
 }

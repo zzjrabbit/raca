@@ -17,7 +17,10 @@ use crate::{
         exit, exit_thread, kill_process, kill_thread, new_process, new_thread, start_process,
         start_thread,
     },
-    vm::{allocate_vmar, allocate_vmar_at, allocate_vmo, map_vmar, protect_vmar, unmap_vmar},
+    vm::{
+        allocate_vmar, allocate_vmar_at, allocate_vmo, map_vmar, protect_vmar, read_vmar, read_vmo,
+        unmap_vmar, write_vmar, write_vmo,
+    },
 };
 
 mod debug;
@@ -83,6 +86,10 @@ fn syscall_impl(process: &Arc<Process>, user_ctx: &mut UserContext) -> Result<us
         17 => kill_process(process, arg1 as u32),
         18 => kill_thread(process, arg1 as u32),
         19 => duplicate_handle(process, arg1 as u32, arg2),
+        20 => read_vmar(process, arg1 as u32, arg2, arg3, arg4),
+        21 => write_vmar(process, arg1 as u32, arg2, arg3, arg4),
+        22 => read_vmo(process, arg1 as u32, arg2, arg3, arg4),
+        23 => write_vmo(process, arg1 as u32, arg2, arg3, arg4),
         _ => Err(Errno::InvSyscall.no_message()),
     }
 }

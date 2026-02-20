@@ -14,7 +14,7 @@ pub fn do_build(args: BuildArgs) -> Result<(PathBuf, PathBuf)> {
 
     let BuildArgs { release, arch } = args;
 
-    let user_boot_path = build_user_boot(&target_dir, &arch)?;
+    let user_boot_path = build_user_boot(&target_dir, &arch, release)?;
 
     let kernel_target = format!("{}-unknown-none", arch);
     let mut kernel = CargoOpts::new("kernel".into());
@@ -23,6 +23,7 @@ pub fn do_build(args: BuildArgs) -> Result<(PathBuf, PathBuf)> {
         kernel.release();
     }
     kernel.env("USER_BOOT_PATH", user_boot_path.to_str().unwrap());
+    kernel.env("RUSTFLAGS", "-C relocation-model=static");
     kernel.done();
     let kernel_path = target_dir
         .join(kernel_target)

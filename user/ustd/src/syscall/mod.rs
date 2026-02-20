@@ -63,7 +63,12 @@ gen_syscall! {
         flags: u32,
     );
 
+    fn sys_read_vmar (20usize) (handle: u32, addr: usize, buffer: *mut u8, size: usize);
+    fn sys_write_vmar (21usize) (handle: u32, addr: usize, buffer: *const u8, size: usize);
+
     fn sys_allocate_vmo (10usize) (count: usize, handle: *mut u32);
+    fn sys_read_vmo (22usize) (handle: u32, offset: usize, buffer: *mut u8, size: usize);
+    fn sys_write_vmo (23usize) (handle: u32, offset: usize, buffer: *const u8, size: usize);
 
     fn sys_exit (11usize) (exit_code: i32);
     fn sys_new_process (12usize) (

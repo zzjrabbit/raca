@@ -93,12 +93,78 @@ pub fn protect_vmar(
     Ok(0)
 }
 
+pub fn read_vmar(
+    process: &Arc<Process>,
+    handle: u32,
+    addr: usize,
+    data_ptr: usize,
+    len: usize,
+) -> SyscallResult {
+    let vmar =
+        process.find_object_with_rights::<Vmar>(HandleId::from_raw(handle), Rights::MANAGE)?;
+
+    let mut buffer = alloc::vec![0u8; len];
+    vmar.read(addr, &mut buffer)?;
+    process.root_vmar().write(data_ptr, &buffer)?;
+
+    Ok(0)
+}
+
+pub fn write_vmar(
+    process: &Arc<Process>,
+    handle: u32,
+    addr: usize,
+    data_ptr: usize,
+    len: usize,
+) -> SyscallResult {
+    let vmar =
+        process.find_object_with_rights::<Vmar>(HandleId::from_raw(handle), Rights::MANAGE)?;
+
+    let mut buffer = alloc::vec![0u8; len];
+    process.root_vmar().read(data_ptr, &mut buffer)?;
+    vmar.write(addr, &buffer)?;
+
+    Ok(0)
+}
+
 pub fn allocate_vmo(process: &Arc<Process>, count: usize, handle_addr: usize) -> SyscallResult {
     let vmo = Vmo::allocate_ram(count)?;
     let handle = Handle::new(vmo, Rights::VMAR);
     let handle = process.add_handle(handle);
 
     process.root_vmar().write_val(handle_addr, &handle)?;
+
+    Ok(0)
+}
+
+pub fn read_vmo(
+    process: &Arc<Process>,
+    handle: u32,
+    offset: usize,
+    data_ptr: usize,
+    len: usize,
+) -> SyscallResult {
+    let vmo = process.find_object_with_rights::<Vmo>(HandleId::from_raw(handle), Rights::READ)?;
+
+    let mut buffer = alloc::vec![0u8; len];
+    vmo.read_bytes(offset, &mut buffer)?;
+    process.root_vmar().write(data_ptr, &buffer)?;
+
+    Ok(0)
+}
+
+pub fn write_vmo(
+    process: &Arc<Process>,
+    handle: u32,
+    offset: usize,
+    data_ptr: usize,
+    len: usize,
+) -> SyscallResult {
+    let vmo = process.find_object_with_rights::<Vmo>(HandleId::from_raw(handle), Rights::WRITE)?;
+
+    let mut buffer = alloc::vec![0u8; len];
+    process.root_vmar().read(data_ptr, &mut buffer)?;
+    vmo.write_bytes(offset, &buffer)?;
 
     Ok(0)
 }

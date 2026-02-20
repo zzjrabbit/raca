@@ -5,10 +5,13 @@ use protocol::{PROC_HANDLE_IDX, PROC_START_HANDLE_CNT, ProcessStartInfo, VMAR_HA
 use crate::{
     ipc::{Channel, MessagePacket},
     os::raca::{BorrowedHandle, OwnedHandle},
+    process::loader::load_elf,
     syscall::{sys_exit, sys_kill_process, sys_new_process, sys_new_thread, sys_start_process},
     thread::Thread,
-    vm::Vmar,
+    vm::{MMUFlags, Vmar, Vmo},
 };
+
+mod loader;
 
 pub struct Process {
     handle: OwnedHandle,
@@ -58,7 +61,7 @@ impl Process {
 }
 
 impl Process {
-    pub fn start(&self, thread: &Thread, _binary: &[u8]) -> Result<()> {
+    pub fn start(&self, thread: &Thread, binary: &[u8]) -> Result<()> {
         let (channel0, channel1) = Channel::new()?;
 
         let mut handles = alloc::vec![unsafe {OwnedHandle::from_raw(0)}; PROC_START_HANDLE_CNT];
@@ -69,13 +72,20 @@ impl Process {
             handles,
         })?;
 
+        let entry = load_elf(self.vmar(), binary)?;
+
+        const STACK_SIZE: usize = 8 * 1024 * 1024;
+        let stack = self.vmar().allocate(STACK_SIZE)?;
+        let vmo = Vmo::allocate(stack.page_count())?;
+        stack.map(0, &vmo, MMUFlags::READ | MMUFlags::WRITE)?;
+
         unsafe {
             sys_start_process(
                 self.handle.as_raw(),
                 thread.handle().as_raw(),
                 channel0.0.as_raw(),
-                0,
-                0,
+                entry,
+                stack.end(),
                 &ProcessStartInfo {
                     vmar_base: self.vmar().base(),
                     vmar_size: self.vmar().size(),

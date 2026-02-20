@@ -4,7 +4,7 @@
 use alloc::vec::Vec;
 use elf::{
     ElfBytes,
-    abi::{PF_R, PF_W, PF_X, PT_LOAD, SHT_RELA},
+    abi::{PF_R, PF_W, PF_X, PT_LOAD},
     endian::LittleEndian,
 };
 use kernel_hal::{
@@ -39,8 +39,6 @@ static STACK_SIZE_REQUEST: StackSizeRequest = StackSizeRequest::new().with_size(
 
 static USER_BOOT: &[u8] = include_bytes!(env!("USER_BOOT_PATH"));
 
-const R_LARCH_RELATIVE: u32 = 3;
-
 #[unsafe(no_mangle)]
 pub extern "C" fn kmain() -> ! {
     kernel_hal::init();
@@ -51,24 +49,23 @@ pub extern "C" fn kmain() -> ! {
     let vmar = process.root_vmar();
 
     let user_boot = ElfBytes::<LittleEndian>::minimal_parse(USER_BOOT).unwrap();
-    let user_boot_size = align_up_by_page_size(
+    let load_segments = || {
         user_boot
             .segments()
             .unwrap()
             .into_iter()
             .filter(|s| s.p_type == PT_LOAD)
-            .map(|s| s.p_vaddr + s.p_memsz)
-            .max()
-            .unwrap() as usize,
-    );
-    let user_boot_region = vmar.allocate_child(user_boot_size).unwrap();
-    let load_base = user_boot_region.base();
+    };
 
-    log::debug!(
-        "user boot: base={:#x} size={:#x}",
-        load_base,
-        user_boot_size
-    );
+    let min_vaddr = load_segments().map(|s| s.p_vaddr).min().unwrap() as usize;
+    let max_vaddr = load_segments()
+        .map(|s| s.p_vaddr + s.p_memsz)
+        .max()
+        .unwrap() as usize;
+    let size = max_vaddr - min_vaddr;
+    let region = vmar
+        .create_child(min_vaddr, align_up_by_page_size(size))
+        .unwrap();
 
     for segment in user_boot
         .segments()
@@ -76,7 +73,7 @@ pub extern "C" fn kmain() -> ! {
         .into_iter()
         .filter(|s| s.p_type == PT_LOAD)
     {
-        let vaddr = segment.p_vaddr as usize + load_base;
+        let vaddr = segment.p_vaddr as usize;
         let memsz = segment.p_memsz as usize;
         let flags = segment.p_flags;
 
@@ -86,8 +83,15 @@ pub extern "C" fn kmain() -> ! {
         let aligned_memsz = align_up_by_page_size(memsz + page_offset);
 
         let vmo = Vmo::allocate_ram(aligned_memsz / PAGE_SIZE).unwrap();
-        vmo.write_bytes(page_offset, user_boot.segment_data(&segment).unwrap())
+        let file_data = user_boot.segment_data(&segment).unwrap();
+        vmo.write_bytes(page_offset, file_data).unwrap();
+        if file_data.len() < memsz {
+            vmo.write_bytes(
+                file_data.len() + page_offset,
+                &alloc::vec![0u8; memsz - file_data.len()],
+            )
             .unwrap();
+        }
 
         let mut mmu_flags = MMUFlags::empty();
         if flags & PF_R != 0 {
@@ -100,9 +104,9 @@ pub extern "C" fn kmain() -> ! {
             mmu_flags |= MMUFlags::EXECUTE;
         }
 
-        user_boot_region
+        region
             .map(
-                aligned_vaddr - load_base,
+                aligned_vaddr - min_vaddr,
                 &vmo,
                 PageProperty::new(mmu_flags, CachePolicy::CacheCoherent, Privilege::User),
                 false,
@@ -110,25 +114,7 @@ pub extern "C" fn kmain() -> ! {
             .unwrap();
     }
 
-    let relas = user_boot
-        .section_headers()
-        .unwrap()
-        .into_iter()
-        .filter_map(|s| (s.sh_type == SHT_RELA).then_some(user_boot.section_data_as_relas(&s)))
-        .flatten()
-        .flatten();
-
-    for rela in relas {
-        if rela.r_type != R_LARCH_RELATIVE {
-            log::debug!("SKIP RELA");
-            continue;
-        }
-        let address = rela.r_offset as usize + load_base;
-        let value = (load_base as i64 + rela.r_addend) as usize;
-        user_boot_region.write_val(address, &value).unwrap();
-    }
-
-    let entry_point = user_boot.ehdr.e_entry as usize + load_base;
+    let entry_point = user_boot.ehdr.e_entry as usize;
     log::debug!("entry: {:#x}", entry_point);
 
     let stack = new_user_stack(process.root_vmar().clone()).unwrap();

@@ -5,7 +5,6 @@ pub struct CargoOpts {
     package: String,
     action: String,
     release: bool,
-    build_std: bool,
     features: Vec<String>,
     env: BTreeMap<String, String>,
     target: Option<String>,
@@ -17,7 +16,6 @@ impl CargoOpts {
             package,
             action: "build".into(),
             release: false,
-            build_std: false,
             features: Vec::new(),
             env: BTreeMap::new(),
             target: None,
@@ -41,11 +39,6 @@ impl CargoOpts {
         self
     }
 
-    pub fn build_std(&mut self) -> &mut Self {
-        self.build_std = true;
-        self
-    }
-
     pub fn feature<S: AsRef<str>>(&mut self, feature: S) -> &mut Self {
         self.features.push(feature.as_ref().to_string());
         self
@@ -65,9 +58,6 @@ impl CargoOpts {
 
         if self.release {
             cargo.arg("--release");
-        }
-        if self.build_std {
-            cargo.arg("-Zbuild-std");
         }
         if let Some(target) = &self.target {
             cargo.arg("--target").arg(target);

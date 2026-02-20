@@ -31,12 +31,14 @@ impl Heap {
         let vmar = root_vmar.allocate(HEAP_SIZE).unwrap();
         let vmo = Vmo::allocate(vmar.page_count()).unwrap();
         vmar.map(0, &vmo, MMUFlags::READ | MMUFlags::WRITE).unwrap();
+        crate::debug("OK").unwrap();
         unsafe {
             self.inner
                 .lock()
                 .claim(Span::from_base_size(vmar.base() as *mut u8, vmar.size()))
                 .unwrap();
         }
+        crate::debug("OK").unwrap();
         self.vmar.call_once(|| vmar);
     }
 }

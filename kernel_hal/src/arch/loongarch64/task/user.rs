@@ -70,7 +70,7 @@ impl UserContext {
     pub fn enter_user_space(&mut self) -> ReturnReason {
         loop {
             TimerConfigBuilder::new()
-                .initial_value(10000000 >> 2)
+                .initial_value(100000000 >> 2)
                 .set_enabled(true)
                 .set_periodic(false)
                 .done();

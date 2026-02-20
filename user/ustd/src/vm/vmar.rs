@@ -1,9 +1,11 @@
 use errors::Result;
+use pod::Pod;
 
 use crate::{
     os::raca::{BorrowedHandle, OwnedHandle},
     syscall::{
-        sys_allocate_vmar, sys_allocate_vmar_at, sys_map_vmar, sys_protect_vmar, sys_unmap_vmar,
+        sys_allocate_vmar, sys_allocate_vmar_at, sys_map_vmar, sys_protect_vmar, sys_read_vmar,
+        sys_unmap_vmar, sys_write_vmar,
     },
     vm::{MMUFlags, PAGE_SIZE, Vmo},
 };
@@ -90,5 +92,36 @@ impl Vmar {
             sys_protect_vmar(self.handle.as_raw(), addr, size, flags.bits())?;
         }
         Ok(())
+    }
+}
+
+impl Vmar {
+    pub fn read(&self, addr: usize, buffer: &mut [u8]) -> Result<()> {
+        unsafe {
+            sys_read_vmar(
+                self.handle.as_raw(),
+                addr,
+                buffer.as_mut_ptr(),
+                buffer.len(),
+            )?;
+        }
+        Ok(())
+    }
+
+    pub fn read_val<T: Pod>(&self, addr: usize) -> Result<T> {
+        let mut value = T::new_zeroed();
+        self.read(addr, value.as_mut_bytes())?;
+        Ok(value)
+    }
+
+    pub fn write(&self, addr: usize, buffer: &[u8]) -> Result<()> {
+        unsafe {
+            sys_write_vmar(self.handle.as_raw(), addr, buffer.as_ptr(), buffer.len())?;
+        }
+        Ok(())
+    }
+
+    pub fn write_val<T: Pod>(&self, addr: usize, value: &T) -> Result<()> {
+        self.write(addr, value.as_bytes())
     }
 }

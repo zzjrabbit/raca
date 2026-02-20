@@ -1,5 +1,6 @@
 #![no_std]
 #![feature(rustc_private)]
+#![feature(int_roundings)]
 
 use errors::Result;
 
@@ -23,5 +24,6 @@ pub fn dummy() {}
 
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
+    crate::debug("PANIC").unwrap();
     loop {}
 }
