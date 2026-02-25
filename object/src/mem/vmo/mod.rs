@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use core::sync::atomic::{AtomicUsize, Ordering};
+
 use crate::{Errno, Result, impl_kobj, mem::PAGE_SIZE, new_kobj, object::KObjectBase};
 use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 use kernel_hal::{
@@ -24,7 +26,7 @@ type PhysicalMemoryRef = Arc<PhysicalMemory>;
 enum VmoInner {
     Ram {
         frames: RwLock<BTreeMap<usize, PhysicalMemoryRef>>,
-        count: usize,
+        count: AtomicUsize,
     },
     IoMem {
         iomem: Arc<IoMem>,
@@ -37,7 +39,7 @@ impl Vmo {
         Ok(new_kobj!({
             inner: VmoInner::Ram {
                 frames: RwLock::new(BTreeMap::new()),
-                count,
+                count: AtomicUsize::new(count),
             },
         }))
     }
@@ -54,8 +56,10 @@ impl Vmo {
     pub fn deep_clone(&self) -> Result<Arc<Self>> {
         match &self.inner {
             VmoInner::Ram { frames, count } => {
+                let frames = frames.read();
+                let count = count.load(Ordering::SeqCst);
                 let mut new_frames = BTreeMap::new();
-                for (&i, source) in frames.read().iter() {
+                for (&i, source) in frames.iter() {
                     let dest = Arc::new(PhysicalMemoryAllocOptions::new().allocate()?);
 
                     let mut buffer = alloc::vec![0u8; PAGE_SIZE];
@@ -67,7 +71,7 @@ impl Vmo {
                 Ok(new_kobj!({
                     inner: VmoInner::Ram {
                         frames: RwLock::new(new_frames),
-                        count: *count,
+                        count: AtomicUsize::new(count),
                     },
                 }))
             }
@@ -85,7 +89,7 @@ impl Vmo {
                 let id = offset / PAGE_SIZE;
                 let page_offset = offset % PAGE_SIZE;
 
-                if id >= *count {
+                if id >= count.load(Ordering::SeqCst) {
                     return Err(Errno::InvArg.with_message("Offset out of bounds"));
                 }
 
@@ -123,14 +127,14 @@ impl Vmo {
     /// Returns the length of the VMO in bytes.
     pub fn len(&self) -> usize {
         match &self.inner {
-            VmoInner::Ram { frames: _, count } => count * PAGE_SIZE,
+            VmoInner::Ram { frames: _, count } => count.load(Ordering::Acquire) * PAGE_SIZE,
             VmoInner::IoMem { iomem, .. } => iomem.size(),
         }
     }
 
     pub fn is_empty(&self) -> bool {
         match &self.inner {
-            VmoInner::Ram { frames: _, count } => *count == 0,
+            VmoInner::Ram { frames: _, count } => count.load(Ordering::Acquire) == 0,
             VmoInner::IoMem { iomem, .. } => iomem.size() == 0,
         }
     }
@@ -146,13 +150,23 @@ impl Vmo {
 impl Vmo {
     pub fn split(&self, id: usize) -> Result<Arc<Self>> {
         match &self.inner {
-            VmoInner::Ram { frames, count } => {
+            VmoInner::Ram {
+                frames,
+                count: a_count,
+            } => {
                 let mut frames = frames.write();
-                let new_frames = frames.split_off(&id);
+                let count = a_count.load(Ordering::Acquire);
+                a_count.store(id, Ordering::SeqCst);
+                let new_frames = frames
+                    .split_off(&id)
+                    .into_iter()
+                    .map(|(id, f)| (id - count, f))
+                    .collect();
+
                 Ok(new_kobj!({
                     inner: VmoInner::Ram {
                         frames: RwLock::new(new_frames),
-                        count: count - id,
+                        count: AtomicUsize::new(count - id),
                     },
                 }))
             }

@@ -37,7 +37,7 @@ pub fn syscall_handler(process: &Arc<Process>, user_ctx: &mut UserContext) {
 
     let result = syscall_impl(process, user_ctx);
 
-    /*if id != 0 {
+    if id != 0 {
         log::debug!(
             "process{}({:#x}) syscall{}({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x}) -> {:?}",
             process.id(),
@@ -51,7 +51,7 @@ pub fn syscall_handler(process: &Arc<Process>, user_ctx: &mut UserContext) {
             arg6,
             WrappedResult(&result),
         );
-    }*/
+    }
 
     let raw_result = match result {
         Ok(ret) => ret,

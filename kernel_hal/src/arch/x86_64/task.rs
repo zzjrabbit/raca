@@ -97,6 +97,10 @@ impl UserContext {
     pub fn set_second_arg(&mut self, arg: usize) {
         self.general.rsi = arg;
     }
+
+    pub fn as_trap_frame(&mut self) -> super::trap::TrapFrame {
+        super::trap::TrapFrame {}
+    }
 }
 
 impl UserContext {
