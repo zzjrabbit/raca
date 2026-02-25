@@ -21,6 +21,11 @@ bitflags! {
                         | Self::MANAGE.bits()
                         | Self::MAP.bits()
                         | Self::DUPLICATE.bits();
+        const VMO = Self::BASIC.bits()
+                        | Self::TRANSFER.bits()
+                        | Self::MANAGE.bits()
+                        | Self::MAP.bits()
+                        | Self::DUPLICATE.bits();
         const PROCESS = Self::BASIC.bits()
                         | Self::TRANSFER.bits()
                         | Self::MANAGE.bits()

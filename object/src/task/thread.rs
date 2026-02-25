@@ -1,4 +1,7 @@
-use core::sync::atomic::{AtomicU64, Ordering};
+use core::{
+    fmt::Display,
+    sync::atomic::{AtomicU64, Ordering},
+};
 
 use alloc::sync::{Arc, Weak};
 use kernel_hal::{
@@ -26,6 +29,12 @@ impl ThreadId {
     pub fn new() -> Self {
         static NEXT_ID: AtomicU64 = AtomicU64::new(0);
         Self(NEXT_ID.fetch_add(1, Ordering::SeqCst))
+    }
+}
+
+impl Display for ThreadId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -111,6 +120,7 @@ impl Thread {
         self.start(move || {
             process.root_vmar().activate();
             let reason = user_ctx.enter_user_space();
+            process.root_vmar().activate();
             match reason {
                 ReturnReason::KernelEvent => {}
                 ReturnReason::Syscall => {
@@ -119,6 +129,9 @@ impl Thread {
                 ReturnReason::Exception(info) => {
                     if exception_handler(&info).is_err() {
                         log::error!("Unhandled exception, info: {:#x?}", info);
+                        log::error!("Trap Frame: {:#x?}", user_ctx.as_trap_frame());
+                        log::error!("Process Id: {:?}", process.id());
+                        process.exit(-1);
                         kernel_hal::platform::idle_loop();
                     }
                 }

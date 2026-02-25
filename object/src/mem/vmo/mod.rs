@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use crate::{Errno, Result, impl_kobj, mem::PAGE_SIZE, new_kobj, object::KObjectBase};
-use alloc::{sync::Arc, vec::Vec};
+use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 use kernel_hal::{
     io::IoMem,
     mem::{PhysicalMemory, PhysicalMemoryAllocOptions, VirtAddr},
@@ -23,7 +23,8 @@ type PhysicalMemoryRef = Arc<PhysicalMemory>;
 #[derive(Debug)]
 enum VmoInner {
     Ram {
-        frames: RwLock<Vec<Option<PhysicalMemoryRef>>>,
+        frames: RwLock<BTreeMap<usize, PhysicalMemoryRef>>,
+        count: usize,
     },
     IoMem {
         iomem: Arc<IoMem>,
@@ -35,7 +36,8 @@ impl Vmo {
     pub fn allocate_ram(count: usize) -> Result<Arc<Self>> {
         Ok(new_kobj!({
             inner: VmoInner::Ram {
-                frames: RwLock::new(alloc::vec![None; count]),
+                frames: RwLock::new(BTreeMap::new()),
+                count,
             },
         }))
     }
@@ -51,23 +53,21 @@ impl Vmo {
 
     pub fn deep_clone(&self) -> Result<Arc<Self>> {
         match &self.inner {
-            VmoInner::Ram { frames } => {
-                let mut new_frames = alloc::vec![None; frames.read().len()];
-                for (i, dest) in new_frames.iter_mut().enumerate() {
-                    let source = frames.read()[i].clone();
-                    if let Some(source) = source {
-                        let frame = Arc::new(PhysicalMemoryAllocOptions::new().allocate()?);
+            VmoInner::Ram { frames, count } => {
+                let mut new_frames = BTreeMap::new();
+                for (&i, source) in frames.read().iter() {
+                    let dest = Arc::new(PhysicalMemoryAllocOptions::new().allocate()?);
 
-                        let mut buffer = alloc::vec![0u8; PAGE_SIZE];
-                        source.read_bytes(0, &mut buffer)?;
-                        frame.write_bytes(0, &buffer)?;
+                    let mut buffer = alloc::vec![0u8; PAGE_SIZE];
+                    source.read_bytes(0, &mut buffer)?;
+                    dest.write_bytes(0, &buffer)?;
 
-                        *dest = Some(frame.clone());
-                    }
+                    new_frames.insert(i, dest);
                 }
                 Ok(new_kobj!({
                     inner: VmoInner::Ram {
                         frames: RwLock::new(new_frames),
+                        count: *count,
                     },
                 }))
             }
@@ -81,16 +81,21 @@ impl Vmo {
 impl Vmo {
     pub(super) fn get_ram(&self, offset: usize) -> Result<Option<(usize, PhysicalMemoryRef)>> {
         match &self.inner {
-            VmoInner::Ram { frames } => {
+            VmoInner::Ram { frames, count } => {
                 let id = offset / PAGE_SIZE;
                 let page_offset = offset % PAGE_SIZE;
 
-                let frame = frames.read()[id].clone();
+                if id >= *count {
+                    return Err(Errno::InvArg.with_message("Offset out of bounds"));
+                }
+
+                let frame = frames.read().get(&id).cloned();
                 match frame {
                     Some(frame) => Ok(Some((page_offset, frame))),
                     None => {
                         let frame = Arc::new(PhysicalMemoryAllocOptions::new().allocate()?);
-                        frames.write()[id] = Some(frame.clone());
+                        frames.write().insert(id, frame.clone());
+                        frame.zero()?;
                         Ok(Some((page_offset, frame)))
                     }
                 }
@@ -108,7 +113,7 @@ impl Vmo {
 
     pub(super) fn commited(&self, id: usize) -> bool {
         match &self.inner {
-            VmoInner::Ram { frames } => frames.read()[id].is_some(),
+            VmoInner::Ram { frames, .. } => frames.read().contains_key(&id),
             VmoInner::IoMem { .. } => true,
         }
     }
@@ -118,14 +123,14 @@ impl Vmo {
     /// Returns the length of the VMO in bytes.
     pub fn len(&self) -> usize {
         match &self.inner {
-            VmoInner::Ram { frames } => frames.read().len() * PAGE_SIZE,
+            VmoInner::Ram { frames: _, count } => count * PAGE_SIZE,
             VmoInner::IoMem { iomem, .. } => iomem.size(),
         }
     }
 
     pub fn is_empty(&self) -> bool {
         match &self.inner {
-            VmoInner::Ram { frames } => frames.read().is_empty(),
+            VmoInner::Ram { frames: _, count } => *count == 0,
             VmoInner::IoMem { iomem, .. } => iomem.size() == 0,
         }
     }
@@ -141,12 +146,13 @@ impl Vmo {
 impl Vmo {
     pub fn split(&self, id: usize) -> Result<Arc<Self>> {
         match &self.inner {
-            VmoInner::Ram { frames } => {
+            VmoInner::Ram { frames, count } => {
                 let mut frames = frames.write();
-                let new_frames = frames.split_off(id);
+                let new_frames = frames.split_off(&id);
                 Ok(new_kobj!({
                     inner: VmoInner::Ram {
                         frames: RwLock::new(new_frames),
+                        count: count - id,
                     },
                 }))
             }

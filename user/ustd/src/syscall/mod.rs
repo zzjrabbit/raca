@@ -1,5 +1,5 @@
 use errors::{Errno, Error, Result};
-use protocol::{ProcessStartInfo, ReadBuffer, WriteBuffer};
+use protocol::{ReadBuffer, WriteBuffer};
 
 mod r#impl;
 
@@ -63,12 +63,12 @@ gen_syscall! {
         flags: u32,
     );
 
-    fn sys_read_vmar (20usize) (handle: u32, addr: usize, buffer: *mut u8, size: usize);
-    fn sys_write_vmar (21usize) (handle: u32, addr: usize, buffer: *const u8, size: usize);
+    fn sys_get_vmar_base (22usize) (handle: u32);
+    fn sys_get_vmar_size (23usize) (handle: u32);
 
     fn sys_allocate_vmo (10usize) (count: usize, handle: *mut u32);
-    fn sys_read_vmo (22usize) (handle: u32, offset: usize, buffer: *mut u8, size: usize);
-    fn sys_write_vmo (23usize) (handle: u32, offset: usize, buffer: *const u8, size: usize);
+    fn sys_read_vmo (20usize) (handle: u32, offset: usize, buffer: *mut u8, size: usize);
+    fn sys_write_vmo (21usize) (handle: u32, offset: usize, buffer: *const u8, size: usize);
 
     fn sys_exit (11usize) (exit_code: i32);
     fn sys_new_process (12usize) (
@@ -83,7 +83,7 @@ gen_syscall! {
         boot_handle: u32,
         entry: usize,
         stack: usize,
-        start_info: *const ProcessStartInfo
+        start_info_addr: usize,
     );
     fn sys_kill_process (17usize) (process: u32);
 

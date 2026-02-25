@@ -4,4 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+os-terminal = "0.7.0"
+protocol = { version = "0.2.0", path = "../protocol" }
+spin.workspace = true
 ustd.workspace = true

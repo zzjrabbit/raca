@@ -5,9 +5,9 @@ edition.workspace = true
 
 [dependencies]
 bitflags = "2.11.0"
-elf = { version = "0.8.0", default-features = false }
 errors.workspace = true
 pod.workspace = true
+goblin.workspace = true
 protocol = { path = "../protocol" }
 spin.workspace = true
 talc = "4.4.3"

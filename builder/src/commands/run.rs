@@ -1,7 +1,4 @@
-use std::{
-    process::{Command, Stdio},
-    time::Duration,
-};
+use std::process::{Command, Stdio};
 
 use anyhow::Result;
 use ovmf_prebuilt::{Arch, FileType, Prebuilt, Source};
@@ -83,12 +80,10 @@ pub fn do_run(args: RunArgs) -> Result<()> {
         cmd.stdout(Stdio::piped());
         let mut qemu = cmd.spawn()?;
 
-        std::thread::sleep(Duration::from_secs(1));
-
         let mut lldb = Command::new("rust-lldb");
         lldb.arg(kernel_path.to_str().unwrap());
-        lldb.arg("--one-line")
-            .arg(&format!("gdb-remote localhost:1234"));
+        /*lldb.arg("--one-line")
+        .arg(&format!("gdb-remote localhost:1234"));*/
         let mut lldb = lldb.spawn()?;
 
         lldb.wait()?.exit_ok()?;

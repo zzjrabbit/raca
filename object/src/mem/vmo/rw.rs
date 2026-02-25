@@ -2,7 +2,6 @@ use errors::Errno;
 use pod::Pod;
 
 use crate::Result;
-use crate::mem::align_down_by_page_size;
 
 use super::{PAGE_SIZE, Vmo};
 
@@ -15,13 +14,13 @@ impl Vmo {
             let mut read = 0;
             while read < buffer.len() {
                 let current_offset = offset + read;
-                let page_offset = current_offset % PAGE_SIZE;
+
+                let (page_offset, frame) = self.get_ram(current_offset)?.unwrap();
                 let remaining = buffer.len() - read;
                 let chunk_size = (PAGE_SIZE - page_offset).min(remaining);
 
-                let aligned_offset = align_down_by_page_size(current_offset);
-                let (_, frame) = self.get_ram(aligned_offset)?.unwrap();
                 frame.read_bytes(page_offset, &mut buffer[read..read + chunk_size])?;
+
                 read += chunk_size;
             }
         }
@@ -41,12 +40,11 @@ impl Vmo {
             let mut written = 0;
             while written < buffer.len() {
                 let current_offset = offset + written;
-                let page_offset = current_offset % PAGE_SIZE;
+
+                let (page_offset, frame) = self.get_ram(current_offset)?.unwrap();
                 let remaining = buffer.len() - written;
                 let chunk_size = (PAGE_SIZE - page_offset).min(remaining);
 
-                let aligned_offset = align_down_by_page_size(current_offset);
-                let (_, frame) = self.get_ram(aligned_offset)?.unwrap();
                 frame.write_bytes(page_offset, &buffer[written..written + chunk_size])?;
                 written += chunk_size;
             }

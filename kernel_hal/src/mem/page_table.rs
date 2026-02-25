@@ -71,8 +71,8 @@ bitflags! {
     pub struct MMUFlags: u32 {
         const READ = 1 << 0;
         const WRITE = 1 << 1;
-        const EXECUTE = 1 << 3;
-        const HUGE_PAGE = 1 << 4;
+        const EXECUTE = 1 << 2;
+        const HUGE_PAGE = 1 << 3;
     }
 }
 

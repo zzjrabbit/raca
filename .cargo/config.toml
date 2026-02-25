@@ -1,6 +1,3 @@
-[unstable]
-bindeps = true
-
 [alias]
 k = "run --package builder --"
 kbuild = "k build"

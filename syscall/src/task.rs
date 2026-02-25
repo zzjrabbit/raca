@@ -3,6 +3,7 @@ use object::{
     object::{Handle, Rights},
     task::{HandleId, Process, Thread},
 };
+use protocol::FIRST_HANDLE;
 
 use crate::{SyscallResult, syscall_handler};
 
@@ -38,6 +39,7 @@ pub fn kill_process(process: &Arc<Process>, handle: u32) -> SyscallResult {
 }
 
 pub fn exit(process: &Arc<Process>, exit_code: i32) -> SyscallResult {
+    log::info!("Process {} exited with code {}.", process.id(), exit_code);
     process.exit(exit_code);
     Ok(0)
 }
@@ -46,6 +48,7 @@ pub fn start_process(
     process: &Arc<Process>,
     handle: u32,
     thread_handle: u32,
+    boot_handle: u32,
     entry: usize,
     stack: usize,
     start_info_addr: usize,
@@ -54,6 +57,11 @@ pub fn start_process(
         process.find_object_with_rights::<Process>(HandleId::from_raw(handle), Rights::MANAGE)?;
     let thread = process
         .find_object_with_rights::<Thread>(HandleId::from_raw(thread_handle), Rights::MANAGE)?;
+
+    let boot_handle = process.remove_handle(HandleId::from_raw(boot_handle))?;
+    let boot_handle = child.add_handle(boot_handle);
+    assert_eq!(boot_handle.as_raw(), FIRST_HANDLE);
+
     child.start(
         thread,
         entry,

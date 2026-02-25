@@ -13,7 +13,7 @@ use tempfile::NamedTempFile;
 
 type Files = BTreeMap<String, PathBuf>;
 
-pub fn build(kernel_path: &Path) -> Result<PathBuf> {
+pub fn build(kernel_path: &Path, user_programs: Vec<(String, PathBuf)>) -> Result<PathBuf> {
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
     let assets_dir = manifest_dir.join("assets");
 
@@ -24,6 +24,9 @@ pub fn build(kernel_path: &Path) -> Result<PathBuf> {
         assets_dir.join("bootloongarch64.efi"),
     );
     files.insert("limine.conf".into(), assets_dir.join("limine.conf"));
+    for (name, path) in user_programs {
+        files.insert(name, path);
+    }
 
     let img_path = manifest_dir
         .parent()

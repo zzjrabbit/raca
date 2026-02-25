@@ -93,43 +93,21 @@ pub fn protect_vmar(
     Ok(0)
 }
 
-pub fn read_vmar(
-    process: &Arc<Process>,
-    handle: u32,
-    addr: usize,
-    data_ptr: usize,
-    len: usize,
-) -> SyscallResult {
-    let vmar =
-        process.find_object_with_rights::<Vmar>(HandleId::from_raw(handle), Rights::MANAGE)?;
-
-    let mut buffer = alloc::vec![0u8; len];
-    vmar.read(addr, &mut buffer)?;
-    process.root_vmar().write(data_ptr, &buffer)?;
-
-    Ok(0)
+pub fn get_vmar_base(process: &Arc<Process>, handle: u32) -> SyscallResult {
+    let vmar = process.find_object_with_rights::<Vmar>(HandleId::from_raw(handle), Rights::READ)?;
+    let base = vmar.base();
+    Ok(base)
 }
 
-pub fn write_vmar(
-    process: &Arc<Process>,
-    handle: u32,
-    addr: usize,
-    data_ptr: usize,
-    len: usize,
-) -> SyscallResult {
-    let vmar =
-        process.find_object_with_rights::<Vmar>(HandleId::from_raw(handle), Rights::MANAGE)?;
-
-    let mut buffer = alloc::vec![0u8; len];
-    process.root_vmar().read(data_ptr, &mut buffer)?;
-    vmar.write(addr, &buffer)?;
-
-    Ok(0)
+pub fn get_vmar_size(process: &Arc<Process>, handle: u32) -> SyscallResult {
+    let vmar = process.find_object_with_rights::<Vmar>(HandleId::from_raw(handle), Rights::READ)?;
+    let size = vmar.size();
+    Ok(size)
 }
 
 pub fn allocate_vmo(process: &Arc<Process>, count: usize, handle_addr: usize) -> SyscallResult {
     let vmo = Vmo::allocate_ram(count)?;
-    let handle = Handle::new(vmo, Rights::VMAR);
+    let handle = Handle::new(vmo, Rights::VMO);
     let handle = process.add_handle(handle);
 
     process.root_vmar().write_val(handle_addr, &handle)?;

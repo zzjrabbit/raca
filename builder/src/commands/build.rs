@@ -5,7 +5,7 @@ use anyhow::Result;
 use crate::{
     BuildArgs,
     cargo::CargoOpts,
-    commands::{build_user_boot, target, target_dir},
+    commands::{build_user_programs, target, target_dir},
     image,
 };
 
@@ -14,7 +14,7 @@ pub fn do_build(args: BuildArgs) -> Result<(PathBuf, PathBuf)> {
 
     let BuildArgs { release, arch } = args;
 
-    let user_boot_path = build_user_boot(&target_dir, &arch, release)?;
+    let user_programs = build_user_programs(&target_dir, &arch, release)?;
 
     let kernel_target = target(&arch).to_string();
     let mut kernel = CargoOpts::new("kernel".into());
@@ -22,7 +22,6 @@ pub fn do_build(args: BuildArgs) -> Result<(PathBuf, PathBuf)> {
     if release {
         kernel.release();
     }
-    kernel.env("USER_BOOT_PATH", user_boot_path.to_str().unwrap());
     kernel.env("RUSTFLAGS", "-C relocation-model=static");
     kernel.done();
     let kernel_path = target_dir
@@ -30,5 +29,5 @@ pub fn do_build(args: BuildArgs) -> Result<(PathBuf, PathBuf)> {
         .join(if release { "release" } else { "debug" })
         .join("kernel");
 
-    image::build(&kernel_path).map(|p| (kernel_path, p))
+    image::build(&kernel_path, user_programs).map(|p| (kernel_path, p))
 }

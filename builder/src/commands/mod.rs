@@ -27,21 +27,33 @@ fn target(arch: &str) -> &str {
     }
 }
 
-fn build_user_boot(target_dir: &Path, arch: &str, release: bool) -> Result<PathBuf> {
+static USER_PROGRAMS: &[&str] = &["terminal", "user_boot"];
+
+fn build_user_programs(
+    target_dir: &Path,
+    arch: &str,
+    release: bool,
+) -> Result<Vec<(String, PathBuf)>> {
     let user_target = target(arch);
 
-    let mut user_boot = CargoOpts::new("user_boot".into());
-    user_boot.env("RUSTFLAGS", "-C relocation-model=pie");
-    user_boot.target(user_target.into());
+    let build_one = |name: String| -> Result<_> {
+        let mut cargo = CargoOpts::new(name.clone());
+        cargo.target(user_target.into());
+        if release {
+            cargo.release();
+        }
+        cargo.done();
+        let path = target_dir
+            .join(user_target)
+            .join(if release { "release" } else { "debug" })
+            .join(&name);
+        Ok((name.to_string(), path))
+    };
 
-    if release {
-        user_boot.release();
+    let mut result = Vec::new();
+    for program in USER_PROGRAMS {
+        let program = program.to_string();
+        result.push(build_one(program)?);
     }
-
-    user_boot.done();
-
-    Ok(target_dir
-        .join(user_target)
-        .join(if release { "release" } else { "debug" })
-        .join("user_boot"))
+    Ok(result)
 }

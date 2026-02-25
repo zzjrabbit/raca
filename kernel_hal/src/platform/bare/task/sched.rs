@@ -10,7 +10,7 @@ pub static SCHEDULER: Mutex<Scheduler> = Mutex::new(Scheduler::new());
 
 #[derive(Debug)]
 pub struct Scheduler {
-    threads: VecDeque<Arc<HwThread>>,
+    pub(super) threads: VecDeque<Arc<HwThread>>,
     current: Option<Weak<HwThread>>,
 }
 

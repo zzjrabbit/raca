@@ -1,3 +1,8 @@
+use core::{
+    fmt::Display,
+    sync::atomic::{AtomicU64, Ordering},
+};
+
 use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
 use kernel_hal::{mem::VirtAddr, task::UserContext};
 use pod::derive;
@@ -11,10 +16,33 @@ use crate::{
     task::Thread,
 };
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ProcessId(u64);
+
+impl Default for ProcessId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ProcessId {
+    pub fn new() -> Self {
+        static NEXT_ID: AtomicU64 = AtomicU64::new(0);
+        Self(NEXT_ID.fetch_add(1, Ordering::SeqCst))
+    }
+}
+
+impl Display for ProcessId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 pub struct Process {
     inner: Mutex<ProcessInner>,
     vmar: Arc<Vmar>,
     base: KObjectBase,
+    id: ProcessId,
 }
 
 struct ProcessInner {
@@ -48,6 +76,7 @@ impl Process {
                 handles: BTreeMap::new(),
                 exit_status: None,
             }),
+            id: ProcessId::new(),
             vmar,
         })
     }
@@ -61,6 +90,10 @@ impl Process {
     pub fn exit_status(&self) -> Option<i32> {
         let inner = self.inner.lock();
         inner.exit_status
+    }
+
+    pub fn id(&self) -> ProcessId {
+        self.id
     }
 }
 

@@ -1,11 +1,11 @@
 use errors::Result;
-use pod::Pod;
 
 use crate::{
     os::raca::{BorrowedHandle, OwnedHandle},
+    process::Process,
     syscall::{
-        sys_allocate_vmar, sys_allocate_vmar_at, sys_map_vmar, sys_protect_vmar, sys_read_vmar,
-        sys_unmap_vmar, sys_write_vmar,
+        sys_allocate_vmar, sys_allocate_vmar_at, sys_get_vmar_base, sys_get_vmar_size,
+        sys_map_vmar, sys_protect_vmar, sys_unmap_vmar,
     },
     vm::{MMUFlags, PAGE_SIZE, Vmo},
 };
@@ -17,6 +17,23 @@ pub struct Vmar {
 }
 
 impl Vmar {
+    pub fn root() -> &'static Self {
+        Process::current().vmar()
+    }
+}
+
+impl Vmar {
+    /// Since this function requires syscall, you'd better use `from_handle_base_size`, which is more efficient.
+    pub unsafe fn from_handle(handle: OwnedHandle) -> Self {
+        let (base, size) = unsafe {
+            (
+                sys_get_vmar_base(handle.as_raw()).unwrap(),
+                sys_get_vmar_size(handle.as_raw()).unwrap(),
+            )
+        };
+        Self { handle, base, size }
+    }
+
     pub unsafe fn from_handle_base_size(handle: OwnedHandle, base: usize, size: usize) -> Self {
         Self { handle, base, size }
     }
@@ -39,8 +56,9 @@ impl Vmar {
 
     pub fn allocate_at(&self, base: usize, size: usize) -> Result<Self> {
         let mut raw_handle = 0u32;
-        let base =
-            unsafe { sys_allocate_vmar_at(self.handle.as_raw(), base, size, &mut raw_handle)? };
+        unsafe {
+            sys_allocate_vmar_at(self.handle.as_raw(), base, size, &mut raw_handle)?;
+        }
         Ok(Self {
             handle: unsafe { OwnedHandle::from_raw(raw_handle) },
             base,
@@ -50,18 +68,22 @@ impl Vmar {
 }
 
 impl Vmar {
+    #[inline(always)]
     pub fn base(&self) -> usize {
         self.base
     }
 
+    #[inline(always)]
     pub fn size(&self) -> usize {
         self.size
     }
 
+    #[inline(always)]
     pub fn end(&self) -> usize {
         self.base + self.size
     }
 
+    #[inline(always)]
     pub fn page_count(&self) -> usize {
         self.size / PAGE_SIZE
     }
@@ -92,36 +114,5 @@ impl Vmar {
             sys_protect_vmar(self.handle.as_raw(), addr, size, flags.bits())?;
         }
         Ok(())
-    }
-}
-
-impl Vmar {
-    pub fn read(&self, addr: usize, buffer: &mut [u8]) -> Result<()> {
-        unsafe {
-            sys_read_vmar(
-                self.handle.as_raw(),
-                addr,
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            )?;
-        }
-        Ok(())
-    }
-
-    pub fn read_val<T: Pod>(&self, addr: usize) -> Result<T> {
-        let mut value = T::new_zeroed();
-        self.read(addr, value.as_mut_bytes())?;
-        Ok(value)
-    }
-
-    pub fn write(&self, addr: usize, buffer: &[u8]) -> Result<()> {
-        unsafe {
-            sys_write_vmar(self.handle.as_raw(), addr, buffer.as_ptr(), buffer.len())?;
-        }
-        Ok(())
-    }
-
-    pub fn write_val<T: Pod>(&self, addr: usize, value: &T) -> Result<()> {
-        self.write(addr, value.as_bytes())
     }
 }

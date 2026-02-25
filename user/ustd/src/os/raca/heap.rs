@@ -1,6 +1,6 @@
 use core::alloc::GlobalAlloc;
 
-use spin::{Mutex, Once};
+use spin::Mutex;
 use talc::{ClaimOnOom, Span, Talc, Talck};
 
 use crate::vm::{MMUFlags, Vmar, Vmo};
@@ -13,16 +13,14 @@ pub fn init(root_vmar: &Vmar) {
 }
 
 struct Heap {
-    vmar: Once<Vmar>,
     inner: Talck<Mutex<()>, ClaimOnOom>,
 }
 
-static HEAP_SIZE: usize = 1024 * 1024 * 1024;
+const HEAP_SIZE: usize = 16 * 1024 * 1024 * 1024;
 
 impl Heap {
     const fn new() -> Self {
         Self {
-            vmar: Once::new(),
             inner: Talck::new(Talc::new(unsafe { ClaimOnOom::new(Span::empty()) })),
         }
     }
@@ -31,15 +29,13 @@ impl Heap {
         let vmar = root_vmar.allocate(HEAP_SIZE).unwrap();
         let vmo = Vmo::allocate(vmar.page_count()).unwrap();
         vmar.map(0, &vmo, MMUFlags::READ | MMUFlags::WRITE).unwrap();
-        crate::debug("OK").unwrap();
+        //crate::println!("allocate vmar: {:#x} {:#x}", vmar.base(), vmar.size());
         unsafe {
             self.inner
                 .lock()
                 .claim(Span::from_base_size(vmar.base() as *mut u8, vmar.size()))
                 .unwrap();
         }
-        crate::debug("OK").unwrap();
-        self.vmar.call_once(|| vmar);
     }
 }
 

@@ -1,17 +1,28 @@
 use alloc::vec::Vec;
 use errors::Result;
 use protocol::{PROC_HANDLE_IDX, PROC_START_HANDLE_CNT, ProcessStartInfo, VMAR_HANDLE_IDX};
+use spin::Once;
 
 use crate::{
     ipc::{Channel, MessagePacket},
     os::raca::{BorrowedHandle, OwnedHandle},
-    process::loader::load_elf,
+    process::{
+        loader::load_elf,
+        stack::{new_user_stack, push_stack},
+    },
     syscall::{sys_exit, sys_kill_process, sys_new_process, sys_new_thread, sys_start_process},
     thread::Thread,
-    vm::{MMUFlags, Vmar, Vmo},
+    vm::Vmar,
 };
 
 mod loader;
+mod stack;
+
+static CURRENT_PROCESS: Once<Process> = Once::new();
+
+pub(crate) fn init(process: Process) {
+    CURRENT_PROCESS.call_once(|| process);
+}
 
 pub struct Process {
     handle: OwnedHandle,
@@ -36,6 +47,10 @@ impl Process {
             Vmar::from_handle_base_size(OwnedHandle::from_raw(raw_vmar_handle), base, size)
         };
         Ok(Self { handle, root_vmar })
+    }
+
+    pub fn current() -> &'static Self {
+        CURRENT_PROCESS.get().unwrap()
     }
 }
 
@@ -64,6 +79,19 @@ impl Process {
     pub fn start(&self, thread: &Thread, binary: &[u8]) -> Result<()> {
         let (channel0, channel1) = Channel::new()?;
 
+        let entry = load_elf(self.vmar(), binary)?;
+        crate::println!("entry {:#x}", entry);
+
+        let (stack_vmo, stack) = new_user_stack(self.vmar())?;
+        let mut stack_ptr = stack.end();
+
+        let proc_info = ProcessStartInfo {
+            vmar_base: self.vmar().base(),
+            vmar_size: self.vmar().size(),
+        };
+        let proc_info_addr = push_stack(&stack, &stack_vmo, &mut stack_ptr, &proc_info)?;
+        crate::println!("Proc Info: {:#x?} at {:#x}", proc_info, proc_info_addr);
+
         let mut handles = alloc::vec![unsafe {OwnedHandle::from_raw(0)}; PROC_START_HANDLE_CNT];
         handles[PROC_HANDLE_IDX] = self.handle().duplicate();
         handles[VMAR_HANDLE_IDX] = self.vmar().handle().duplicate();
@@ -72,26 +100,23 @@ impl Process {
             handles,
         })?;
 
-        let entry = load_elf(self.vmar(), binary)?;
-
-        const STACK_SIZE: usize = 8 * 1024 * 1024;
-        let stack = self.vmar().allocate(STACK_SIZE)?;
-        let vmo = Vmo::allocate(stack.page_count())?;
-        stack.map(0, &vmo, MMUFlags::READ | MMUFlags::WRITE)?;
-
+        crate::println!(
+            "stack start at {:#x} end at {:#x}",
+            stack.base(),
+            stack.end()
+        );
         unsafe {
             sys_start_process(
                 self.handle.as_raw(),
                 thread.handle().as_raw(),
                 channel0.0.as_raw(),
                 entry,
-                stack.end(),
-                &ProcessStartInfo {
-                    vmar_base: self.vmar().base(),
-                    vmar_size: self.vmar().size(),
-                },
+                stack_ptr,
+                proc_info_addr,
             )?;
         }
+
+        core::mem::forget(channel0);
 
         Ok(())
     }

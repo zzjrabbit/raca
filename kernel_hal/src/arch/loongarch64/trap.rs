@@ -101,7 +101,7 @@ impl CpuExceptionInfo {
                 1 => MMUFlags::READ,
                 2 => MMUFlags::WRITE,
                 3 => MMUFlags::EXECUTE,
-                _ => unreachable!(),
+                _ => return None,
             },
         })
     }
@@ -129,9 +129,12 @@ const LOONGARCH_CSR_ERA: usize = 0x6;
 unsafe extern "C" fn trap_entry() {
     naked_asm!(
         // If coming from userspace, preserve the user stack pointer and load
-        // the kernel stack pointer. If we came from the kernel, SAVE_SCRATCH
+        // the user context ptr. If we came from the kernel, SAVE_SCRATCH
         // will contain 0, and we should continue on the current stack.
         "csrwr   $sp, {SAVE_SCRATCH}",
+        // CSRWR actually swaps the value.
+        // So now the stack is stored in SAVE_SRATCH,
+        // and $sp contains the user context ptr.
         "bnez    $sp, _trap_from_user",
 
         "_trap_from_kernel:",

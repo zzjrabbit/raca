@@ -129,6 +129,11 @@ impl UserContext {
         ]
     }
 
+    /// Get instruction pointer
+    pub fn get_ip(&self) -> usize {
+        self.era
+    }
+
     /// Set instruction pointer
     pub fn set_ip(&mut self, ip: usize) {
         self.era = ip;
@@ -161,7 +166,7 @@ impl UserContext {
         self.general.a1 = arg;
     }
 
-    fn as_trap_frame(&self) -> TrapFrame {
+    pub fn as_trap_frame(&self) -> TrapFrame {
         TrapFrame {
             general: self.general,
             prmd: self.prmd,

@@ -4,7 +4,7 @@ use kernel_hal::mem::PageProperty;
 use object::mem::{Vmar, Vmo};
 use pod::Pod;
 
-static USER_STACK_SIZE: usize = 8 * 1024 * 1024;
+static USER_STACK_SIZE: usize = 16 * 1024 * 1024;
 
 pub fn new_user_stack(vmar: Arc<Vmar>) -> Result<Arc<Vmar>> {
     let stack = vmar.allocate_child(USER_STACK_SIZE)?;

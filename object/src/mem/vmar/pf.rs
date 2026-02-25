@@ -32,13 +32,10 @@ impl Vmar {
                 if mapping.vmo().is_iomem() {
                     let vmo = mapping.vmo().clone();
 
-                    let (io_mem, base_offset) = vmo.get_iomem().unwrap();
-                    self.vm_space.cursor(start)?.map_iomem(
-                        &io_mem,
-                        prop,
-                        base_offset,
-                        vmo.len(),
-                    )?;
+                    let (io_mem, _) = vmo.get_iomem().unwrap();
+                    self.vm_space
+                        .cursor(start)?
+                        .map_iomem(&io_mem, prop, 0, vmo.len())?;
                 } else if perm_required.contains(MMUFlags::WRITE)
                     && !prop.flags.contains(MMUFlags::WRITE)
                 {
@@ -67,9 +64,9 @@ impl Vmar {
                 } else {
                     let (_, frame) = mapping.vmo().get_ram(vaddr - start)?.unwrap();
 
-                    let start = align_down_by_page_size(vaddr);
+                    let aligned_vaddr = align_down_by_page_size(vaddr);
 
-                    let mut cursor = self.vm_space.cursor(start)?;
+                    let mut cursor = self.vm_space.cursor(aligned_vaddr)?;
                     cursor.map(&frame, prop)?;
                 }
 

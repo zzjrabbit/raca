@@ -79,6 +79,12 @@ impl PhysicalMemory {
 }
 
 impl PhysicalMemory {
+    pub fn start(&self) -> PhysAddr {
+        self.start_address
+    }
+}
+
+impl PhysicalMemory {
     pub fn as_slice(&self, id: usize) -> Result<&[u8]> {
         let paddr = self.get_start_address_of_frame(id)?;
         let vaddr = phys_to_virt(paddr);

@@ -213,7 +213,12 @@ impl Vmar {
         let addr = self.base() + offset;
         let size = vmo.len();
 
-        log::debug!("Vmar::map: addr={:#x} size={:#x}", addr, size,);
+        log::debug!(
+            "Vmar::map: addr={:#x} size={:#x} flags={:x}",
+            addr,
+            size,
+            prop.flags
+        );
 
         if !self.contains_range(addr, size) {
             return Err(Errno::InvArg.with_message("Out of VMAR range!"));
@@ -354,6 +359,28 @@ impl Vmar {
         }
 
         Ok(())
+    }
+
+    pub fn query(&self, addr: VirtAddr) -> usize {
+        /*if let Some(child) = self.find_child(addr) {
+            return child.query(addr);
+        }
+        let vmo = self
+            .inner
+            .read()
+            .vm_mappings
+            .iter()
+            .find(|mapping| mapping.contains(addr))?
+            .vmo()
+            .clone();
+        Some(vmo)*/
+        self.vm_space
+            .cursor(align_down_by_page_size(addr))
+            .unwrap()
+            .query()
+            .unwrap()
+            .0
+            .start()
     }
 }
 

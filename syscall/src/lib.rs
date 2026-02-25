@@ -18,8 +18,8 @@ use crate::{
         start_thread,
     },
     vm::{
-        allocate_vmar, allocate_vmar_at, allocate_vmo, map_vmar, protect_vmar, read_vmar, read_vmo,
-        unmap_vmar, write_vmar, write_vmo,
+        allocate_vmar, allocate_vmar_at, allocate_vmo, get_vmar_base, get_vmar_size, map_vmar,
+        protect_vmar, read_vmo, unmap_vmar, write_vmo,
     },
 };
 
@@ -37,17 +37,21 @@ pub fn syscall_handler(process: &Arc<Process>, user_ctx: &mut UserContext) {
 
     let result = syscall_impl(process, user_ctx);
 
-    log::debug!(
-        "syscall{}({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x}) -> {:?}",
-        id,
-        arg1,
-        arg2,
-        arg3,
-        arg4,
-        arg5,
-        arg6,
-        WrappedResult(&result),
-    );
+    /*if id != 0 {
+        log::debug!(
+            "process{}({:#x}) syscall{}({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x}) -> {:?}",
+            process.id(),
+            user_ctx.get_ip(),
+            id,
+            arg1,
+            arg2,
+            arg3,
+            arg4,
+            arg5,
+            arg6,
+            WrappedResult(&result),
+        );
+    }*/
 
     let raw_result = match result {
         Ok(ret) => ret,
@@ -79,17 +83,25 @@ fn syscall_impl(process: &Arc<Process>, user_ctx: &mut UserContext) -> Result<us
         10 => allocate_vmo(process, arg1, arg2),
         11 => exit(process, arg1 as i32),
         12 => new_process(process, arg1, arg2, arg3, arg4),
-        13 => start_process(process, arg1 as u32, arg2 as u32, arg3, arg4, arg5),
+        13 => start_process(
+            process,
+            arg1 as u32,
+            arg2 as u32,
+            arg3 as u32,
+            arg4,
+            arg5,
+            arg6,
+        ),
         14 => new_thread(process, arg1 as u32, arg2),
         15 => start_thread(process, arg1 as u32, arg2, arg3, arg4),
         16 => exit_thread(),
         17 => kill_process(process, arg1 as u32),
         18 => kill_thread(process, arg1 as u32),
         19 => duplicate_handle(process, arg1 as u32, arg2),
-        20 => read_vmar(process, arg1 as u32, arg2, arg3, arg4),
-        21 => write_vmar(process, arg1 as u32, arg2, arg3, arg4),
-        22 => read_vmo(process, arg1 as u32, arg2, arg3, arg4),
-        23 => write_vmo(process, arg1 as u32, arg2, arg3, arg4),
+        20 => read_vmo(process, arg1 as u32, arg2, arg3, arg4),
+        21 => write_vmo(process, arg1 as u32, arg2, arg3, arg4),
+        22 => get_vmar_base(process, arg1 as u32),
+        23 => get_vmar_size(process, arg1 as u32),
         _ => Err(Errno::InvSyscall.no_message()),
     }
 }

@@ -5,7 +5,7 @@ use object::task::Process;
 use crate::SyscallResult;
 
 pub fn debug(process: &Arc<Process>, ptr: usize, len: usize) -> SyscallResult {
-    if len > 100 {
+    if len > 1024 * 1024 {
         return Err(Errno::TooBig.no_message());
     }
     let mut buf = alloc::vec![0u8; len];
@@ -13,6 +13,6 @@ pub fn debug(process: &Arc<Process>, ptr: usize, len: usize) -> SyscallResult {
     let Ok(msg) = String::from_utf8(buf) else {
         return Err(Errno::InvArg.no_message());
     };
-    log::info!("USER DEBUG: {}", msg);
+    kernel_hal::print!("{}", msg);
     Ok(0)
 }

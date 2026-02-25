@@ -4,11 +4,14 @@
 
 use errors::Result;
 
+pub use stdio::_print;
+
 extern crate alloc;
 
 pub mod ipc;
 pub mod os;
 pub mod process;
+mod stdio;
 pub mod syscall;
 pub mod thread;
 pub mod vm;
@@ -23,7 +26,7 @@ pub fn debug(msg: &str) -> Result<()> {
 pub fn dummy() {}
 
 #[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! {
-    crate::debug("PANIC").unwrap();
+fn panic(info: &core::panic::PanicInfo) -> ! {
+    crate::println!("USER PANIC: {}", info);
     loop {}
 }

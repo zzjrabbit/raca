@@ -1,17 +1,19 @@
 #![no_std]
 #![no_main]
 
+use core::slice::from_raw_parts;
+
 use alloc::vec::Vec;
-use elf::{
-    ElfBytes,
-    abi::{PF_R, PF_W, PF_X, PT_LOAD},
-    endian::LittleEndian,
-};
+use goblin::elf::program_header::{PF_R, PF_W, PF_X, PT_LOAD};
 use kernel_hal::{
-    mem::{CachePolicy, MMUFlags, PageProperty, Privilege},
+    mem::{CachePolicy, MMUFlags, PageProperty, Privilege, virt_to_phys},
     task::launch_multitask,
 };
-use limine::{BaseRevision, request::StackSizeRequest};
+use limine::{
+    BaseRevision,
+    modules::InternalModule,
+    request::{FramebufferRequest, ModuleRequest, StackSizeRequest},
+};
 use object::{
     ipc::{Channel, MessagePacket},
     mem::{PAGE_SIZE, Vmo, align_up_by_page_size},
@@ -19,7 +21,9 @@ use object::{
     task::Process,
 };
 use protocol::{
-    FIRST_HANDLE, PROC_HANDLE_IDX, PROC_START_HANDLE_CNT, ProcessStartInfo, VMAR_HANDLE_IDX,
+    BOOT_DATA_CNT, BOOT_FB_HANDLE_IDX, BOOT_HANDLE_CNT, BOOT_TERM_HANDLE_IDX, FB_HEIGHT_IDX,
+    FB_WIDTH_IDX, FIRST_HANDLE, PROC_HANDLE_IDX, PROC_START_HANDLE_CNT, ProcessStartInfo,
+    TERM_SIZE_IDX, VMAR_HANDLE_IDX,
 };
 use syscall::syscall_handler;
 
@@ -37,7 +41,16 @@ static BASE_REVISION: BaseRevision = BaseRevision::with_revision(4);
 #[unsafe(link_section = ".requests")]
 static STACK_SIZE_REQUEST: StackSizeRequest = StackSizeRequest::new().with_size(128 * 1024);
 
-static USER_BOOT: &[u8] = include_bytes!(env!("USER_BOOT_PATH"));
+#[used]
+#[unsafe(link_section = ".requests")]
+static FRAME_BUFFER_REQUEST: FramebufferRequest = FramebufferRequest::new();
+
+#[used]
+#[unsafe(link_section = ".requests")]
+static USER_BOOT_REQUEST: ModuleRequest = ModuleRequest::new().with_internal_modules(&[
+    &InternalModule::new().with_path(c"user_boot"),
+    &InternalModule::new().with_path(c"terminal"),
+]);
 
 #[unsafe(no_mangle)]
 pub extern "C" fn kmain() -> ! {
@@ -48,29 +61,20 @@ pub extern "C" fn kmain() -> ! {
     let process = Process::new();
     let vmar = process.root_vmar();
 
-    let user_boot = ElfBytes::<LittleEndian>::minimal_parse(USER_BOOT).unwrap();
-    let load_segments = || {
-        user_boot
-            .segments()
-            .unwrap()
-            .into_iter()
-            .filter(|s| s.p_type == PT_LOAD)
-    };
+    let files = USER_BOOT_REQUEST.get_response().unwrap().modules();
+    let user_boot_file = files[0];
+    let terminal_file = files[1];
 
-    let min_vaddr = load_segments().map(|s| s.p_vaddr).min().unwrap() as usize;
-    let max_vaddr = load_segments()
-        .map(|s| s.p_vaddr + s.p_memsz)
-        .max()
-        .unwrap() as usize;
-    let size = max_vaddr - min_vaddr;
-    let region = vmar
-        .create_child(min_vaddr, align_up_by_page_size(size))
-        .unwrap();
+    let user_boot_data =
+        unsafe { from_raw_parts(user_boot_file.addr(), user_boot_file.size() as usize) };
+    let terminal_data =
+        unsafe { from_raw_parts(terminal_file.addr(), terminal_file.size() as usize) };
+
+    let user_boot = goblin::elf::Elf::parse(user_boot_data).unwrap();
 
     for segment in user_boot
-        .segments()
-        .unwrap()
-        .into_iter()
+        .program_headers
+        .iter()
         .filter(|s| s.p_type == PT_LOAD)
     {
         let vaddr = segment.p_vaddr as usize;
@@ -83,7 +87,7 @@ pub extern "C" fn kmain() -> ! {
         let aligned_memsz = align_up_by_page_size(memsz + page_offset);
 
         let vmo = Vmo::allocate_ram(aligned_memsz / PAGE_SIZE).unwrap();
-        let file_data = user_boot.segment_data(&segment).unwrap();
+        let file_data = &user_boot_data[segment.file_range()];
         vmo.write_bytes(page_offset, file_data).unwrap();
         if file_data.len() < memsz {
             vmo.write_bytes(
@@ -104,9 +108,11 @@ pub extern "C" fn kmain() -> ! {
             mmu_flags |= MMUFlags::EXECUTE;
         }
 
+        let region = vmar.create_child(aligned_vaddr, aligned_memsz).unwrap();
+
         region
             .map(
-                aligned_vaddr - min_vaddr,
+                0,
                 &vmo,
                 PageProperty::new(mmu_flags, CachePolicy::CacheCoherent, Privilege::User),
                 false,
@@ -114,11 +120,20 @@ pub extern "C" fn kmain() -> ! {
             .unwrap();
     }
 
-    let entry_point = user_boot.ehdr.e_entry as usize;
+    let entry_point = user_boot.entry as usize;
     log::debug!("entry: {:#x}", entry_point);
 
-    let stack = new_user_stack(process.root_vmar().clone()).unwrap();
+    let stack = new_user_stack(vmar.clone()).unwrap();
     let mut stack_ptr = stack.end();
+
+    let terminal_region = vmar
+        .allocate_child(align_up_by_page_size(terminal_data.len()))
+        .unwrap();
+    let terminal_vmo = Vmo::allocate_ram(terminal_region.page_count()).unwrap();
+    terminal_region
+        .map(0, &terminal_vmo, PageProperty::user_data(), false)
+        .unwrap();
+    terminal_vmo.write_bytes(0, terminal_data).unwrap();
 
     log::debug!("pushing handles");
 
@@ -159,11 +174,35 @@ pub extern "C" fn kmain() -> ! {
             handles,
         })
         .unwrap();
+
+    let frame_buffer = FRAME_BUFFER_REQUEST
+        .get_response()
+        .take()
+        .unwrap()
+        .framebuffers()
+        .next()
+        .unwrap();
+
+    let fb_len = frame_buffer.width() as usize
+        * frame_buffer.height() as usize
+        * (frame_buffer.bpp() as usize / 8);
+    let fb_vmo = Vmo::acquire_iomem(virt_to_phys(frame_buffer.addr() as usize), fb_len).unwrap();
+
+    let mut data = alloc::vec![0usize; BOOT_DATA_CNT];
+    data[TERM_SIZE_IDX] = terminal_data.len();
+    data[FB_WIDTH_IDX] = frame_buffer.width() as usize;
+    data[FB_HEIGHT_IDX] = frame_buffer.height() as usize;
+    let data = data
+        .iter()
+        .flat_map(|d| d.to_le_bytes().into_iter())
+        .collect();
+
+    let mut handles = alloc::vec![Handle::new(process.clone(), Rights::empty()); BOOT_HANDLE_CNT];
+    handles[BOOT_TERM_HANDLE_IDX] = Handle::new(terminal_region, Rights::VMAR);
+    handles[BOOT_FB_HANDLE_IDX] = Handle::new(fb_vmo, Rights::VMO);
+
     kernel_endpoint
-        .write(MessagePacket {
-            data: Vec::from(b"Hello, World"),
-            handles: Vec::new(),
-        })
+        .write(MessagePacket { data, handles })
         .unwrap();
 
     launch_multitask();

@@ -1,0 +1,7 @@
+[package]
+name = "terminal"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ustd.workspace = true
