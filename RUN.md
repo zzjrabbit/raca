@@ -3,6 +3,11 @@
 ## Using a pre-built image
 You can download a image built by github actions at [the release page](https://github.com/zzjrabbit/raca/releases). \
 Then you need to install [qemu](https://www.qemu.org/download/). \
+
+> [!NOTE]
+> For Ubuntu users, all qemu packages does not provide `qemu-system-loongarch64` executable.
+> Fortunately, Debian provides it, so you may need to install the debian package manually.
+
 And [ovmf](https://github.com/osdev0/edk2-ovmf-nightly/releases/tag/nightly-20260214T015320Z) is also required. \
 After downloading the archieve, extract ovmf-code-loongarch64.fd. \
 Finally, you can launch the kernel by the following command.
