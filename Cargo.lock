@@ -140,7 +140,7 @@ dependencies = [
 
 [[package]]
 name = "builder"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -330,7 +330,7 @@ dependencies = [
 
 [[package]]
 name = "errors"
-version = "0.3.0"
+version = "0.4.0"
 
 [[package]]
 name = "fastrand"
@@ -553,7 +553,7 @@ dependencies = [
 
 [[package]]
 name = "kernel"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "errors",
  "goblin",
@@ -568,7 +568,7 @@ dependencies = [
 
 [[package]]
 name = "kernel_hal"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "acpi",
  "bit_field",
@@ -709,7 +709,7 @@ dependencies = [
 
 [[package]]
 name = "object"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "bitflags 2.11.0",
  "downcast-rs",
@@ -803,7 +803,7 @@ checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
 
 [[package]]
 name = "pod"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "pod-macros",
  "zerocopy",
@@ -811,7 +811,7 @@ dependencies = [
 
 [[package]]
 name = "pod-macros"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -839,7 +839,7 @@ dependencies = [
 
 [[package]]
 name = "protocol"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "pod",
  "zerocopy",
@@ -1086,7 +1086,7 @@ dependencies = [
 
 [[package]]
 name = "syscall"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "errors",
  "kernel_hal",
@@ -1130,7 +1130,7 @@ dependencies = [
 
 [[package]]
 name = "terminal"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "ustd",
 ]
@@ -1216,7 +1216,7 @@ dependencies = [
 
 [[package]]
 name = "user_boot"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "acpi",
  "log",
@@ -1229,7 +1229,7 @@ dependencies = [
 
 [[package]]
 name = "ustd"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "bitflags 2.11.0",
  "errors",
