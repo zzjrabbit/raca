@@ -2,14 +2,14 @@ use alloc::{sync::Arc, vec::Vec};
 use errors::{Errno, Result};
 use loongarch64::{
     PhysAddr as Paddr, PrivilegeLevel, VirtAddr as Vaddr,
-    registers::{PgdHigh, PgdLow},
+    registers::{Asid, PgdHigh, PgdLow},
     structures::paging::{
         CachePolicy, FrameAllocator, FrameDeallocator, Mapper, OffsetPageTable, Page, PageProperty,
         PageSize, PageTable, PageTableFlags, PhysFrame, Size1GiB, Size2MiB, Size4KiB, Translate,
         TranslateResult,
     },
 };
-use spin::RwLock;
+use spin::{Lazy, Mutex, RwLock};
 
 use crate::{
     mem::{
@@ -22,9 +22,9 @@ use crate::{
 pub const KERNEL_ASPACE_BASE: usize = 0xffff_ff02_0000_0000;
 pub const KERNEL_ASPACE_SIZE: usize = 0x0000_0080_0000_0000;
 pub const USER_ASPACE_BASE: usize = 0x1_0000;
-pub const USER_ASPACE_SIZE: usize = (1usize << 47) - 4096 - USER_ASPACE_BASE;
+pub const USER_ASPACE_SIZE: usize = 0xffff_ffff_ffff_ffff / 2 - USER_ASPACE_BASE;
 
-pub fn current_page_table() -> OffsetPageTable<'static> {
+pub fn current_page_table() -> LoongArch64PageTable {
     let lower_half = PgdLow.read();
     let lower_half = phys_to_virt(lower_half as PhysAddr) as *mut PageTable;
 
@@ -32,7 +32,12 @@ pub fn current_page_table() -> OffsetPageTable<'static> {
     let higher_half = phys_to_virt(higher_half as PhysAddr) as *mut PageTable;
 
     let physical_memory_offset = phys_to_virt(0) as u64;
-    unsafe { OffsetPageTable::new(&mut *lower_half, &mut *higher_half, physical_memory_offset) }
+    LoongArch64PageTable {
+        inner: unsafe {
+            OffsetPageTable::new(&mut *lower_half, &mut *higher_half, physical_memory_offset)
+        },
+        asid: 0,
+    }
 }
 
 pub fn flush_cache(address: VirtAddr) {
@@ -72,9 +77,6 @@ fn kernel_property_converter(property: crate::mem::PageProperty) -> PageProperty
     }
     if flags.contains(MMUFlags::HUGE_PAGE) {
         result.add_flags(PageTableFlags::HUGE_PAGE);
-        result.add_flags(PageTableFlags::GLOBAL_FOR_HUGE_PAGE);
-    } else {
-        result.add_flags(PageTableFlags::GLOBAL);
     }
 
     match property.privilege {
@@ -151,7 +153,22 @@ fn loongarch64_property_converter(
     crate::mem::PageProperty::new(flags, cache_policy, privilege)
 }
 
-impl GeneralPageTable for OffsetPageTable<'_> {
+static FREE_ASIDS: Lazy<Mutex<Vec<u64>>> = Lazy::new(|| {
+    Mutex::new({
+        let mut asids = Vec::new();
+        for i in 1..(1 << Asid.bit_width() as usize) {
+            asids.push(i);
+        }
+        asids
+    })
+});
+
+pub struct LoongArch64PageTable {
+    inner: OffsetPageTable<'static>,
+    asid: u64,
+}
+
+impl GeneralPageTable for LoongArch64PageTable {
     fn map(
         &mut self,
         page: crate::mem::Page,
@@ -166,14 +183,15 @@ impl GeneralPageTable for OffsetPageTable<'_> {
                 let page = Page::<$size>::containing_address(vaddr);
                 let frame = PhysFrame::<$size>::containing_address(paddr);
                 unsafe {
-                    self.map_to(
-                        page,
-                        frame,
-                        kernel_property_converter(property),
-                        &mut *FRAME_ALLOCATOR.lock(),
-                    )
-                    .map_err(|_| errors::Errno::MapFailed.no_message())?
-                    .flush();
+                    self.inner
+                        .map_to(
+                            page,
+                            frame,
+                            kernel_property_converter(property),
+                            &mut *FRAME_ALLOCATOR.lock(),
+                        )
+                        .map_err(|_| errors::Errno::MapFailed.no_message())?
+                        .flush();
                 }
                 Ok(())
             }};
@@ -188,7 +206,7 @@ impl GeneralPageTable for OffsetPageTable<'_> {
 
     fn unmap(&mut self, vaddr: VirtAddr) -> Result<crate::mem::PageSize> {
         use loongarch64::structures::paging::Mapper;
-        match self.translate(Vaddr::new(vaddr as u64)) {
+        match self.inner.translate(Vaddr::new(vaddr as u64)) {
             TranslateResult::Mapped { frame, .. } => {
                 let size = crate::mem::PageSize::try_from(frame.size() as usize).unwrap();
 
@@ -196,19 +214,19 @@ impl GeneralPageTable for OffsetPageTable<'_> {
 
                 match frame.size() {
                     Size4KiB::SIZE => {
-                        Mapper::unmap(self, Page::<Size4KiB>::containing_address(vaddr))
+                        Mapper::unmap(&mut self.inner, Page::<Size4KiB>::containing_address(vaddr))
                             .unwrap()
                             .1
                             .flush()
                     }
                     Size2MiB::SIZE => {
-                        Mapper::unmap(self, Page::<Size2MiB>::containing_address(vaddr))
+                        Mapper::unmap(&mut self.inner, Page::<Size2MiB>::containing_address(vaddr))
                             .unwrap()
                             .1
                             .flush()
                     }
                     Size1GiB::SIZE => {
-                        Mapper::unmap(self, Page::<Size1GiB>::containing_address(vaddr))
+                        Mapper::unmap(&mut self.inner, Page::<Size1GiB>::containing_address(vaddr))
                             .unwrap()
                             .1
                             .flush()
@@ -231,7 +249,7 @@ impl GeneralPageTable for OffsetPageTable<'_> {
         &mut self,
         vaddr: VirtAddr,
     ) -> Result<(PhysAddr, crate::mem::PageProperty, crate::mem::PageSize)> {
-        match self.translate(Vaddr::new(vaddr as u64)) {
+        match self.inner.translate(Vaddr::new(vaddr as u64)) {
             TranslateResult::Mapped {
                 frame,
                 offset,
@@ -251,7 +269,7 @@ impl GeneralPageTable for OffsetPageTable<'_> {
                 Ok((address + offset as usize, property, size))
             }
             TranslateResult::NotMapped => {
-                Err(Errno::InvArg.with_message("Translating unmapped page."))
+                Err(Errno::PageFault.with_message("Translating unmapped page."))
             }
             TranslateResult::InvalidFrameAddress(_) => {
                 Err(Errno::InvArg.with_message("Invalid frame address."))
@@ -275,14 +293,17 @@ impl GeneralPageTable for OffsetPageTable<'_> {
         unsafe {
             match page_size {
                 crate::mem::PageSize::Size4K => self
+                    .inner
                     .update_property(Page::<Size4KiB>::containing_address(vaddr), property)
                     .map_err(|_| Errno::InvArg.with_message("Updating unmapped page."))?
                     .flush(),
                 crate::mem::PageSize::Size2M => self
+                    .inner
                     .update_property(Page::<Size2MiB>::containing_address(vaddr), property)
                     .map_err(|_| Errno::InvArg.with_message("Updating unmapped page."))?
                     .flush(),
                 crate::mem::PageSize::Size1G => self
+                    .inner
                     .update_property(Page::<Size1GiB>::containing_address(vaddr), property)
                     .map_err(|_| Errno::InvArg.with_message("Updating unmapped page."))?
                     .flush(),
@@ -305,7 +326,7 @@ impl GeneralPageTable for OffsetPageTable<'_> {
         root_table.zero();
 
         let mut stack: Vec<(*const PageTable, *mut PageTable, u8)> = alloc::vec![(
-            self.lower_half_page_table() as *const _,
+            self.inner.lower_half_page_table() as *const _,
             root_table as *mut _,
             4
         )];
@@ -348,22 +369,33 @@ impl GeneralPageTable for OffsetPageTable<'_> {
 
         let page_table = unsafe {
             let kernel_page_table_ptr =
-                Vaddr::new(self.higher_half_page_table() as *const _ as u64).as_mut_ptr();
+                Vaddr::new(self.inner.higher_half_page_table() as *const _ as u64).as_mut_ptr();
             OffsetPageTable::new(
                 root_table,
                 &mut *kernel_page_table_ptr,
                 phys_to_virt(0) as u64,
             )
         };
-        Arc::new(RwLock::new(page_table))
+        Arc::new(RwLock::new(Self {
+            inner: page_table,
+            asid: FREE_ASIDS.lock().pop().unwrap(),
+        }))
     }
 
     fn activate(&self) {
-        let lower_half = virt_to_phys(self.lower_half_page_table() as *const _ as VirtAddr);
+        let lower_half = virt_to_phys(self.inner.lower_half_page_table() as *const _ as VirtAddr);
         PgdLow.write(lower_half as u64);
 
-        let higher_half = virt_to_phys(self.higher_half_page_table() as *const _ as VirtAddr);
+        let higher_half = virt_to_phys(self.inner.higher_half_page_table() as *const _ as VirtAddr);
         PgdHigh.write(higher_half as u64);
+
+        Asid.write_asid(self.asid);
+    }
+}
+
+impl Drop for LoongArch64PageTable {
+    fn drop(&mut self) {
+        FREE_ASIDS.lock().push(self.asid);
     }
 }
 

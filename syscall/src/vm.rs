@@ -115,6 +115,21 @@ pub fn allocate_vmo(process: &Arc<Process>, count: usize, handle_addr: usize) ->
     Ok(0)
 }
 
+pub fn acquire_vmo(
+    process: &Arc<Process>,
+    handle_ptr: usize,
+    addr: usize,
+    size: usize,
+) -> SyscallResult {
+    let vmo = Vmo::acquire_iomem(addr, size)?;
+    let handle = Handle::new(vmo, Rights::VMO);
+    let handle = process.add_handle(handle);
+
+    process.root_vmar().write_val(handle_ptr, &handle)?;
+
+    Ok(0)
+}
+
 pub fn read_vmo(
     process: &Arc<Process>,
     handle: u32,

@@ -4,7 +4,10 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+acpi = { version = "6.1.0" }
+log.workspace = true
 os-terminal = "0.7.0"
+pci_types = "0.10.1"
 protocol = { path = "../protocol" }
 spin.workspace = true
 ustd.workspace = true

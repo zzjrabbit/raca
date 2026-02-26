@@ -7,6 +7,7 @@ use alloc::vec::Vec;
 use goblin::elf::program_header::{PF_R, PF_W, PF_X, PT_LOAD};
 use kernel_hal::{
     mem::{CachePolicy, MMUFlags, PageProperty, Privilege, virt_to_phys},
+    platform::PcieInfo,
     task::launch_multitask,
 };
 use limine::{
@@ -21,9 +22,9 @@ use object::{
     task::Process,
 };
 use protocol::{
-    BOOT_DATA_CNT, BOOT_FB_HANDLE_IDX, BOOT_HANDLE_CNT, BOOT_TERM_HANDLE_IDX, FB_HEIGHT_IDX,
-    FB_WIDTH_IDX, FIRST_HANDLE, PROC_HANDLE_IDX, PROC_START_HANDLE_CNT, ProcessStartInfo,
-    TERM_SIZE_IDX, VMAR_HANDLE_IDX,
+    BOOT_DATA_CNT, BOOT_FB_HANDLE_IDX, BOOT_HANDLE_CNT, BOOT_PCIE_HANDLE_IDX, BOOT_TERM_HANDLE_IDX,
+    FB_HEIGHT_IDX, FB_WIDTH_IDX, FIRST_HANDLE, PCIE_INFO_LEN_IDX, PROC_HANDLE_IDX,
+    PROC_START_HANDLE_CNT, ProcessStartInfo, TERM_SIZE_IDX, VMAR_HANDLE_IDX,
 };
 use syscall::syscall_handler;
 
@@ -35,7 +36,7 @@ mod stack;
 
 #[used]
 #[unsafe(link_section = ".requests")]
-static BASE_REVISION: BaseRevision = BaseRevision::with_revision(4);
+static BASE_REVISION: BaseRevision = BaseRevision::with_revision(5);
 
 #[used]
 #[unsafe(link_section = ".requests")]
@@ -188,10 +189,15 @@ pub extern "C" fn kmain() -> ! {
         * (frame_buffer.bpp() as usize / 8);
     let fb_vmo = Vmo::acquire_iomem(virt_to_phys(frame_buffer.addr() as usize), fb_len).unwrap();
 
+    let pcie_info = PcieInfo::get();
+    log::debug!("PCIe Info: {:#x?}", pcie_info);
+    let pcie_info_vmo = Vmo::acquire_iomem(pcie_info.paddr, pcie_info.length).unwrap();
+
     let mut data = alloc::vec![0usize; BOOT_DATA_CNT];
     data[TERM_SIZE_IDX] = terminal_data.len();
     data[FB_WIDTH_IDX] = frame_buffer.width() as usize;
     data[FB_HEIGHT_IDX] = frame_buffer.height() as usize;
+    data[PCIE_INFO_LEN_IDX] = pcie_info.length;
     let data = data
         .iter()
         .flat_map(|d| d.to_le_bytes().into_iter())
@@ -200,6 +206,7 @@ pub extern "C" fn kmain() -> ! {
     let mut handles = alloc::vec![Handle::new(process.clone(), Rights::empty()); BOOT_HANDLE_CNT];
     handles[BOOT_TERM_HANDLE_IDX] = Handle::new(terminal_region, Rights::VMAR);
     handles[BOOT_FB_HANDLE_IDX] = Handle::new(fb_vmo, Rights::VMO);
+    handles[BOOT_PCIE_HANDLE_IDX] = Handle::new(pcie_info_vmo, Rights::VMO);
 
     kernel_endpoint
         .write(MessagePacket { data, handles })

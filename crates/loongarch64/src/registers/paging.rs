@@ -1,7 +1,27 @@
+use bit_field::BitField;
+
 use crate::define_csr;
 
 define_csr!(PwcLow, 0x1c);
 define_csr!(PwcHigh, 0x1d);
+
+define_csr!(Asid, 0x18);
+
+impl Asid {
+    pub fn read_asid(&self) -> u64 {
+        let width = self.bit_width() as usize;
+        self.read().get_bits(0..=width)
+    }
+
+    pub fn write_asid(&self, value: u64) {
+        let width = self.bit_width() as usize;
+        self.write(value.get_bits(0..=width));
+    }
+
+    pub fn bit_width(&self) -> u8 {
+        self.read().get_bits(16..=23) as u8
+    }
+}
 
 define_csr!(PgdLow, 0x19);
 define_csr!(PgdHigh, 0x1a);

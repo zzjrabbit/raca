@@ -18,8 +18,8 @@ use crate::{
         start_thread,
     },
     vm::{
-        allocate_vmar, allocate_vmar_at, allocate_vmo, get_vmar_base, get_vmar_size, map_vmar,
-        protect_vmar, read_vmo, unmap_vmar, write_vmo,
+        acquire_vmo, allocate_vmar, allocate_vmar_at, allocate_vmo, get_vmar_base, get_vmar_size,
+        map_vmar, protect_vmar, read_vmo, unmap_vmar, write_vmo,
     },
 };
 
@@ -102,6 +102,7 @@ fn syscall_impl(process: &Arc<Process>, user_ctx: &mut UserContext) -> Result<us
         21 => write_vmo(process, arg1 as u32, arg2, arg3, arg4),
         22 => get_vmar_base(process, arg1 as u32),
         23 => get_vmar_size(process, arg1 as u32),
+        24 => acquire_vmo(process, arg1, arg2, arg3),
         _ => Err(Errno::InvSyscall.no_message()),
     }
 }

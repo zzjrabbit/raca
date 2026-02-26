@@ -1,5 +1,6 @@
 pub use crate::arch::{idle_ins, idle_loop};
 pub(crate) use acpi::ACPI;
+pub use acpi::PcieInfo;
 pub use acpi::power;
 pub use logger::_print;
 

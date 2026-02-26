@@ -120,7 +120,6 @@ impl Thread {
         self.start(move || {
             process.root_vmar().activate();
             let reason = user_ctx.enter_user_space();
-            process.root_vmar().activate();
             match reason {
                 ReturnReason::KernelEvent => {}
                 ReturnReason::Syscall => {

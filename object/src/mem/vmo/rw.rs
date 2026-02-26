@@ -8,8 +8,8 @@ use super::{PAGE_SIZE, Vmo};
 impl Vmo {
     pub fn read_bytes(&self, offset: usize, buffer: &mut [u8]) -> Result<()> {
         if self.is_iomem() {
-            let (iomem, base_offset) = self.get_iomem().unwrap();
-            iomem.read_bytes(offset - base_offset, buffer)?;
+            let (iomem, _) = self.get_iomem().unwrap();
+            iomem.read_bytes(offset, buffer)?;
         } else {
             let mut read = 0;
             while read < buffer.len() {
