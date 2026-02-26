@@ -85,6 +85,7 @@ impl ConfigRegionAccess for PciAccess<'_> {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct PciDevice {
     pub address: PciAddress,
     pub vendor_id: VendorId,

@@ -6,8 +6,12 @@ edition.workspace = true
 [dependencies]
 acpi = { version = "6.1.0" }
 log.workspace = true
+memoffset = "0.9.1"
 os-terminal = "0.7.0"
 pci_types = "0.10.1"
+pod.workspace = true
 protocol = { path = "../protocol" }
 spin.workspace = true
 ustd.workspace = true
+virtio-drivers = "0.12.0"
+zerocopy.workspace = true

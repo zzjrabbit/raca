@@ -66,10 +66,11 @@ gen_syscall! {
     fn sys_get_vmar_base (22usize) (handle: u32);
     fn sys_get_vmar_size (23usize) (handle: u32);
 
-    fn sys_allocate_vmo (10usize) (count: usize, handle: *mut u32);
+    fn sys_allocate_vmo (10usize) (count: usize, continuous: u8, handle: *mut u32);
     fn sys_acquire_vmo (24usize) (handle: *mut u32, addr: usize, size: usize);
     fn sys_read_vmo (20usize) (handle: u32, offset: usize, buffer: *mut u8, size: usize);
     fn sys_write_vmo (21usize) (handle: u32, offset: usize, buffer: *const u8, size: usize);
+    fn sys_get_vmo_paddr (25usize) (handle: u32);
 
     fn sys_exit (11usize) (exit_code: i32);
     fn sys_new_process (12usize) (

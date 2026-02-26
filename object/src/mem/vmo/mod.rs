@@ -44,6 +44,24 @@ impl Vmo {
         }))
     }
 
+    pub fn allocate_continuous(count: usize) -> Result<Arc<Self>> {
+        let frames = PhysicalMemoryAllocOptions::new().count(count).allocate()?;
+        let start = frames.start();
+
+        let mut frames = BTreeMap::new();
+        for id in 0..count {
+            let start_address = start + id * PAGE_SIZE;
+            let frame = PhysicalMemory::from_start_address(start_address, 1);
+            frames.insert(id, Arc::new(frame));
+        }
+        Ok(new_kobj!({
+            inner: VmoInner::Ram {
+                frames: RwLock::new(frames),
+                count: AtomicUsize::new(count),
+            },
+        }))
+    }
+
     pub fn acquire_iomem(address: VirtAddr, length: usize) -> Result<Arc<Self>> {
         Ok(new_kobj!({
             inner: VmoInner::IoMem {
@@ -143,6 +161,15 @@ impl Vmo {
         match &self.inner {
             VmoInner::Ram { .. } => false,
             VmoInner::IoMem { .. } => true,
+        }
+    }
+
+    /// # Safety
+    /// The caller must ensure the ram is continunous, and it is RAM.
+    pub unsafe fn start(&self) -> usize {
+        match &self.inner {
+            VmoInner::Ram { frames, count: _ } => frames.read().get(&0).unwrap().start(),
+            VmoInner::IoMem { iomem: _, .. } => unreachable!(),
         }
     }
 }

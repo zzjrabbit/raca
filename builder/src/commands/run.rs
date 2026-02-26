@@ -35,19 +35,7 @@ pub fn do_run(args: RunArgs) -> Result<()> {
         cmd.arg("-s").arg("-S");
     }
 
-    cmd.arg("-device").arg("qemu-xhci,id=xhci");
-    cmd.args(["-device", "usb-kbd", "-device", "usb-mouse"]);
-
-    if let Some(backend) = match std::env::consts::OS {
-        "linux" => Some("pa"),
-        "macos" => Some("coreaudio"),
-        "windows" => Some("dsound"),
-        _ => None,
-    } {
-        cmd.arg("-audiodev").arg(format!("{backend},id=sound"));
-        cmd.arg("-device").arg("intel-hda");
-        cmd.arg("-device").arg("hda-output,audiodev=sound");
-    }
+    cmd.args(["-device", "virtio-keyboard-pci"]);
 
     match storage {
         StorageDevice::Ahci => {

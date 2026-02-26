@@ -6,6 +6,7 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
+use pci_types::device_type::DeviceType;
 use protocol::{
     BOOT_FB_HANDLE_IDX, BOOT_PCIE_HANDLE_IDX, FB_HEIGHT_IDX, FB_WIDTH_IDX, PCIE_INFO_LEN_IDX,
 };
@@ -15,6 +16,8 @@ use ustd::{
     os::raca::OwnedHandle,
     vm::Vmo,
 };
+
+use crate::pcie::PCI_DEVICES;
 
 mod kbd;
 mod pcie;
@@ -53,6 +56,17 @@ pub extern "Rust" fn main(channel: &Channel) -> i32 {
     };
     PCIE_INFO_VMO.call_once(|| pcie_info_vmo);
     Lazy::force(&pcie::PCI_DEVICES);
+
+    let devices = PCI_DEVICES.lock();
+    let device = devices
+        .iter()
+        .find(|d| d.device_type == DeviceType::KeyboardController)
+        .unwrap();
+    termpln!("device bars: {:x?}", device.bars);
+    let bar = device.bars[4].unwrap();
+    let (address, size) = bar.unwrap_mem();
+    let vmo = Vmo::acquire(address, size).unwrap();
+    kbd::init(vmo);
 
     core::mem::forget(handles);
     0

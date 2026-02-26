@@ -105,8 +105,17 @@ pub fn get_vmar_size(process: &Arc<Process>, handle: u32) -> SyscallResult {
     Ok(size)
 }
 
-pub fn allocate_vmo(process: &Arc<Process>, count: usize, handle_addr: usize) -> SyscallResult {
-    let vmo = Vmo::allocate_ram(count)?;
+pub fn allocate_vmo(
+    process: &Arc<Process>,
+    count: usize,
+    continuous: bool,
+    handle_addr: usize,
+) -> SyscallResult {
+    let vmo = if continuous {
+        Vmo::allocate_continuous(count)?
+    } else {
+        Vmo::allocate_ram(count)?
+    };
     let handle = Handle::new(vmo, Rights::VMO);
     let handle = process.add_handle(handle);
 
@@ -160,4 +169,12 @@ pub fn write_vmo(
     vmo.write_bytes(offset, &buffer)?;
 
     Ok(0)
+}
+
+pub fn get_vmo_paddr(process: &Arc<Process>, handle: u32) -> SyscallResult {
+    let vmo = process.find_object_with_rights::<Vmo>(HandleId::from_raw(handle), Rights::READ)?;
+
+    let paddr = unsafe { vmo.start() };
+
+    Ok(paddr)
 }

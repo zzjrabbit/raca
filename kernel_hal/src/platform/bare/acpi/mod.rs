@@ -3,11 +3,7 @@ use acpi::{
     aml::Interpreter,
     platform::AcpiPlatform,
     registers::FixedRegisters,
-    sdt::{
-        fadt::Fadt,
-        mcfg::{Mcfg, McfgEntry},
-        spcr::Spcr,
-    },
+    sdt::{fadt::Fadt, mcfg::Mcfg, spcr::Spcr},
 };
 use alloc::sync::Arc;
 use limine::request::RsdpRequest;

@@ -19,7 +19,7 @@ use crate::{
     },
     vm::{
         acquire_vmo, allocate_vmar, allocate_vmar_at, allocate_vmo, get_vmar_base, get_vmar_size,
-        map_vmar, protect_vmar, read_vmo, unmap_vmar, write_vmo,
+        get_vmo_paddr, map_vmar, protect_vmar, read_vmo, unmap_vmar, write_vmo,
     },
 };
 
@@ -80,7 +80,7 @@ fn syscall_impl(process: &Arc<Process>, user_ctx: &mut UserContext) -> Result<us
         7 => map_vmar(process, arg1 as u32, arg2, arg3 as u32, arg4 as u32),
         8 => unmap_vmar(process, arg1 as u32, arg2, arg3),
         9 => protect_vmar(process, arg1 as u32, arg2, arg3, arg4 as u32),
-        10 => allocate_vmo(process, arg1, arg2),
+        10 => allocate_vmo(process, arg1, arg2 != 0, arg3),
         11 => exit(process, arg1 as i32),
         12 => new_process(process, arg1, arg2, arg3, arg4),
         13 => start_process(
@@ -103,6 +103,7 @@ fn syscall_impl(process: &Arc<Process>, user_ctx: &mut UserContext) -> Result<us
         22 => get_vmar_base(process, arg1 as u32),
         23 => get_vmar_size(process, arg1 as u32),
         24 => acquire_vmo(process, arg1, arg2, arg3),
+        25 => get_vmo_paddr(process, arg1 as u32),
         _ => Err(Errno::InvSyscall.no_message()),
     }
 }

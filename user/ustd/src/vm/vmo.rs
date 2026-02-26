@@ -3,28 +3,45 @@ use pod::Pod;
 
 use crate::{
     os::raca::{BorrowedHandle, OwnedHandle},
-    syscall::{sys_acquire_vmo, sys_allocate_vmo, sys_read_vmo, sys_write_vmo},
+    syscall::{sys_acquire_vmo, sys_allocate_vmo, sys_get_vmo_paddr, sys_read_vmo, sys_write_vmo},
     vm::PAGE_SIZE,
 };
 
 pub struct Vmo {
     handle: OwnedHandle,
     len: usize,
+    continuous: bool,
 }
 
 impl Vmo {
     pub unsafe fn from_handle_len(handle: OwnedHandle, len: usize) -> Self {
-        Vmo { handle, len }
+        Self {
+            handle,
+            len,
+            continuous: false,
+        }
     }
 
     pub fn allocate(count: usize) -> Result<Self> {
         let mut raw_handle = 0u32;
         unsafe {
-            sys_allocate_vmo(count, &mut raw_handle)?;
-            Ok(Vmo::from_handle_len(
+            sys_allocate_vmo(count, 0, &mut raw_handle)?;
+            Ok(Self::from_handle_len(
                 OwnedHandle::from_raw(raw_handle),
                 count * PAGE_SIZE,
             ))
+        }
+    }
+
+    pub fn allocate_continuous(count: usize) -> Result<Self> {
+        let mut raw_handle = 0u32;
+        unsafe {
+            sys_allocate_vmo(count, 1, &mut raw_handle)?;
+            Ok(Self {
+                handle: OwnedHandle::from_raw(raw_handle),
+                len: count * PAGE_SIZE,
+                continuous: true,
+            })
         }
     }
 
@@ -32,7 +49,7 @@ impl Vmo {
         let mut raw_handle = 0u32;
         unsafe {
             sys_acquire_vmo(&mut raw_handle, addr, size)?;
-            Ok(Vmo::from_handle_len(
+            Ok(Self::from_handle_len(
                 OwnedHandle::from_raw(raw_handle),
                 size,
             ))
@@ -41,6 +58,12 @@ impl Vmo {
 }
 
 impl Vmo {
+    pub fn start(&self) -> Option<usize> {
+        self.continuous
+            .then(|| unsafe { Some(sys_get_vmo_paddr(self.handle.as_raw()).ok()?) })
+            .flatten()
+    }
+
     pub fn len(&self) -> usize {
         self.len
     }
