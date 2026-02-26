@@ -178,7 +178,6 @@ pub extern "C" fn kmain() -> ! {
 
     let frame_buffer = FRAME_BUFFER_REQUEST
         .get_response()
-        .take()
         .unwrap()
         .framebuffers()
         .next()

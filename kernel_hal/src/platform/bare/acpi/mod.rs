@@ -69,7 +69,7 @@ fn init_acpi() -> Result<Acpi, AcpiError> {
     let mcfg = acpi_tables.find_table::<Mcfg>().unwrap();
     let entries = mcfg.entries();
     let paddr = virt_to_phys(entries.as_ptr() as VirtAddr);
-    let length = entries.len() * core::mem::size_of::<McfgEntry>();
+    let length = size_of_val(entries);
 
     Ok(Acpi {
         aml_engine,
